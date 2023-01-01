@@ -1,0 +1,872 @@
+{% extends "OfficeApps/base.html" %}
+
+{% block content %}
+  <style>
+    .create-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .create-header-content h2 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .create-header-description {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin: 0;
+    }
+
+    .form-section {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+      box-shadow: var(--card-shadow-hover);
+      border-color: rgba(240, 125, 60, 0.2);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 24px 0;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-field.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .form-label .required {
+      color: #ef4444;
+      font-size: 16px;
+    }
+
+    .form-label .info-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+      cursor: help;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text);
+      background: white;
+      transition: all 0.2s ease;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(240, 125, 60, 0.1);
+    }
+
+    .form-input:disabled,
+    .form-select:disabled {
+      background: linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+    }
+
+    .form-input::placeholder,
+    .form-textarea::placeholder {
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 2px solid var(--border);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .btn-cancel {
+      background: white;
+      color: var(--text);
+      border: 2px solid var(--border);
+    }
+
+    .btn-cancel:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+
+    .btn-create {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+    }
+
+    .btn-create:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);
+    }
+
+    .btn-create:active {
+      transform: translateY(0);
+    }
+
+    .error-message {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+      border-left: 4px solid #ef4444;
+      color: #dc2626;
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-top: 24px;
+      display: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .error-message.show {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .error-message svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .auto-generated-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(59, 130, 246, 0.1);
+      color: #2563eb;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .auto-generated-badge svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .help-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .help-text svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .derived-field-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .derived-field-indicator svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .create-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .form-actions {
+        flex-direction: column-reverse;
+      }
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    .template-preview {
+      margin-top: 12px;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .boolean-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23003D5B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      padding-right: 40px;
+    }
+  </style>
+
+  <div id="roleFlags" style="display:none"
+       data-admin="{{ is_admin|yesno:'true,false' }}"
+       data-maker="{{ is_maker|yesno:'true,false' }}"
+       data-checker="{{ is_checker|yesno:'true,false' }}">
+  </div>
+
+  <div class="create-header">
+    <div class="create-header-content">
+      <h2>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px; color: var(--accent);">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        Create Proforma Invoice
+      </h2>
+      <p class="create-header-description">Fill the complete invoice header details. Line items can be added on the edit page after creation.</p>
+    </div>
+  </div>
+
+  <form id="invoiceForm">
+    <div class="form-section">
+      <div class="section-header">
+        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>
+        <h3 class="section-title">Invoice Header</h3>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">
+            Exporter <span class="required">*</span>
+          </label>
+          <select id="exporter" class="form-select" required>
+            <option value="">-- Select Exporter --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">
+            Consignee <span class="required">*</span>
+          </label>
+          <select id="consignee" class="form-select" required>
+            <option value="">-- Select Consignee --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">
+            Proforma Invoice No
+            <span class="auto-generated-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+              Auto-generated
+            </span>
+          </label>
+          <input id="number" type="text" class="form-input" disabled value="Auto-generated when saved">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">
+            Proforma Invoice Date
+          </label>
+          <input id="date" type="date" class="form-input">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Buyer Order No</label>
+          <input id="buyer_order_no" type="text" class="form-input" placeholder="Enter Buyer Order No">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Buyer Order Date</label>
+          <input id="buyer_order_date" type="date" class="form-input">
+        </div>
+
+        <div class="form-field full-width">
+          <label class="form-label">Other References</label>
+          <textarea id="other_references" class="form-textarea" placeholder="Any other references or notes"></textarea>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">
+            Country of Origin of Goods
+            <span class="derived-field-indicator">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              Derived from Exporter
+            </span>
+          </label>
+          <input id="origin_country" type="text" class="form-input" disabled>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">
+            Country of Final Destination
+            <span class="derived-field-indicator">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              Derived from Final Destination
+            </span>
+          </label>
+          <input id="final_dest_country" type="text" class="form-input" disabled>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+          <line x1="1" y1="10" x2="23" y2="10"></line>
+        </svg>
+        <h3 class="section-title">Shipping & Logistics</h3>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">Pre-Carriage By</label>
+          <select id="pre_carriage" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Place of Receipt</label>
+          <select id="place_of_receipt" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Place of Receipt by Pre-Carrier</label>
+          <select id="place_of_receipt_by_pre_carrier" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Vessel / Flight No</label>
+          <input id="vessel_flight_no" type="text" class="form-input" placeholder="e.g., Vessel ABC / Flight XY123">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Port of Loading</label>
+          <select id="port_loading" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Port of Discharge</label>
+          <select id="port_discharge" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Final Destination</label>
+          <select id="final_destination" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Container No</label>
+          <input id="container_no" type="text" class="form-input" placeholder="Container number">
+        </div>
+
+        <div class="form-field full-width">
+          <label class="form-label">Marks & Nos</label>
+          <textarea id="marks_and_nos" class="form-textarea" placeholder="Marks and numbers"></textarea>
+        </div>
+
+        <div class="form-field full-width">
+          <label class="form-label">Kind of Packages</label>
+          <input id="kind_of_packages" type="text" class="form-input" placeholder="e.g., Cartons, Pallets, Boxes">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <h3 class="section-title">Payment & Terms</h3>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">
+            Payment Terms <span class="required">*</span>
+          </label>
+          <select id="payment_term" class="form-select" required>
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Bank</label>
+          <select id="bank" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">
+            Incoterms <span class="required">*</span>
+          </label>
+          <select id="incoterm" class="form-select" required>
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Bank Charges (USD)</label>
+          <input id="bank_charges" type="number" class="form-input" step="0.01" min="0" placeholder="0.00">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Validity for Acceptance</label>
+          <input id="validity_for_acceptance" type="date" class="form-input">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Validity for Shipment</label>
+          <input id="validity_for_shipment" type="date" class="form-input">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Partial Shipment</label>
+          <select id="partial_shipment" class="form-select boolean-select">
+            <option value="false">Not Allowed</option>
+            <option value="true">Allowed</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Transshipment</label>
+          <select id="transshipment" class="form-select boolean-select">
+            <option value="false">Not Allowed</option>
+            <option value="true">Allowed</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <h3 class="section-title">Terms & Conditions</h3>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">Template</label>
+          <select id="terms_template" class="form-select">
+            <option value="">-- Select Template --</option>
+          </select>
+          <div class="help-text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Select a template to load pre-defined terms
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Selected Template Name</label>
+          <input id="terms_template_name" type="text" class="form-input" disabled>
+        </div>
+
+        <div class="form-field full-width">
+          <label class="form-label">Terms & Conditions Content</label>
+          <textarea id="terms_textarea" class="form-textarea" placeholder="Enter or edit terms & conditions. Select a template above to load pre-defined content." style="min-height: 160px;"></textarea>
+          <div class="help-text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            You can edit the content after selecting a template
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" id="btnCancel" class="btn btn-cancel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        Cancel
+      </button>
+      <button type="button" id="btnCreate" class="btn btn-create">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Create Proforma Invoice
+      </button>
+    </div>
+
+    <div id="formError" class="error-message">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span id="formErrorText"></span>
+    </div>
+  </form>
+
+  <script>
+    const API_BASE = "/api/master/proforma-invoices/";
+
+    function getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    async function fetchJSON(url, opts={}) {
+      const resp = await fetch(url, {
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": getCsrfToken(),
+        },
+        ...opts,
+      });
+      if (!resp.ok) {
+        let msg = "Request failed";
+        try { const err = await resp.json(); msg = err.detail || JSON.stringify(err); } catch(e){}
+        throw new Error(msg);
+      }
+      const ct = resp.headers.get("content-type") || "";
+      return ct.includes("application/json") ? resp.json() : resp.blob();
+    }
+
+    function setToday() {
+      const d = new Date();
+      const iso = d.toISOString().split("T")[0];
+      const dateEl = document.getElementById("date");
+      if (dateEl) dateEl.value = iso;
+    }
+
+    function showError(message) {
+      const errorEl = document.getElementById("formError");
+      const errorText = document.getElementById("formErrorText");
+      errorText.textContent = message;
+      errorEl.classList.add("show");
+      errorEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      setTimeout(() => {
+        errorEl.classList.remove("show");
+      }, 5000);
+    }
+
+    function hideError() {
+      const errorEl = document.getElementById("formError");
+      errorEl.classList.remove("show");
+    }
+
+    async function loadMasters() {
+      try {
+        const [
+          exporters, consignees, paymentTerms, incoterms, banks,
+          preCarriage, placeOfReceipt, portsLoading, portsDischarge,
+          finalDestinations, termsTemplates
+        ] = await Promise.all([
+          fetchJSON("/api/master/exporters/"),
+          fetchJSON("/api/master/consignees/"),
+          fetchJSON("/api/master/payment-terms/"),
+          fetchJSON("/api/master/incoterms/"),
+          fetchJSON("/api/master/banks/"),
+          fetchJSON("/api/master/pre-carriage/"),
+          fetchJSON("/api/master/place-of-receipt/"),
+          fetchJSON("/api/master/ports-loading/"),
+          fetchJSON("/api/master/ports-discharge/"),
+          fetchJSON("/api/master/final-destinations/"),
+          fetchJSON("/api/master/terms-conditions/"),
+        ]);
+
+        const fillSelect = (id, data, labelFn) => {
+          const items = (data && Array.isArray(data.results)) ? data.results : data;
+          const el = document.getElementById(id);
+          const placeholder = el.querySelector('option[value=""]');
+          const placeholderText = placeholder ? placeholder.textContent : '-- Select --';
+          el.innerHTML = `<option value="">${placeholderText}</option>` + (items || []).map(x => `<option value="${x.id}">${labelFn(x)}</option>`).join('');
+        };
+
+        fillSelect("exporter", exporters, x => x.name);
+        fillSelect("consignee", consignees, x => x.name);
+        fillSelect("payment_term", paymentTerms, x => x.name);
+        fillSelect("bank", banks, x => (x.bank_name || "") + (x.beneficiary_name ? (" - " + x.beneficiary_name) : ""));
+        fillSelect("incoterm", incoterms, x => x.code + (x.description ? (" - " + x.description) : ""));
+        fillSelect("pre_carriage", preCarriage, x => x.name);
+        fillSelect("place_of_receipt", placeOfReceipt, x => x.name);
+        fillSelect("place_of_receipt_by_pre_carrier", placeOfReceipt, x => x.name);
+        fillSelect("port_loading", portsLoading, x => x.name + " - " + (x.country || ""));
+        fillSelect("port_discharge", portsDischarge, x => x.name + " - " + (x.country || ""));
+        fillSelect("final_destination", finalDestinations, x => x.name + " - " + (x.country || ""));
+        fillSelect("terms_template", termsTemplates, x => x.name);
+
+        document.getElementById("exporter").addEventListener("change", async (e) => {
+          const expId = e.target.value;
+          const originEl = document.getElementById("origin_country");
+          originEl.value = "";
+          if (!expId) return;
+          try {
+            const exp = await fetchJSON("/api/master/exporters/" + expId + "/");
+            const countryId = exp.country;
+            if (countryId) {
+              const country = await fetchJSON("/api/master/countries/" + countryId + "/");
+              originEl.value = (country.name || "") + (country.iso_code ? (" (" + country.iso_code + ")") : "");
+            }
+          } catch (err) { }
+        });
+
+        document.getElementById("final_destination").addEventListener("change", async (e) => {
+          const fdId = e.target.value;
+          const fdEl = document.getElementById("final_dest_country");
+          fdEl.value = "";
+          if (!fdId) return;
+          try {
+            const fd = await fetchJSON("/api/master/final-destinations/" + fdId + "/");
+            const countryId = fd.country;
+            if (countryId) {
+              const country = await fetchJSON("/api/master/countries/" + countryId + "/");
+              fdEl.value = (country.name || "") + (country.iso_code ? (" (" + country.iso_code + ")") : "");
+            }
+          } catch (err) { }
+        });
+
+        document.getElementById("terms_template").addEventListener("change", async (e) => {
+          const tplId = e.target.value;
+          const nameEl = document.getElementById("terms_template_name");
+          const txtEl = document.getElementById("terms_textarea");
+          nameEl.value = "";
+          txtEl.value = "";
+          if (!tplId) return;
+          try {
+            const tpl = await fetchJSON("/api/master/terms-conditions/" + tplId + "/");
+            nameEl.value = tpl.name || "";
+            txtEl.value = tpl.content_html || "";
+          } catch (err) { }
+        });
+
+      } catch (e) {
+        showError("Failed to load master data: " + e.message);
+      }
+    }
+
+    async function createInvoice() {
+      const exporter = document.getElementById("exporter").value;
+      const consignee = document.getElementById("consignee").value;
+      const payment_term = document.getElementById("payment_term").value;
+      const incoterm = document.getElementById("incoterm").value;
+
+      hideError();
+
+      if (!exporter || !consignee || !payment_term || !incoterm) {
+        showError("Please select Exporter, Consignee, Payment Term, and Incoterm.");
+        return;
+      }
+
+      const btnCreate = document.getElementById("btnCreate");
+      const originalHTML = btnCreate.innerHTML;
+      btnCreate.disabled = true;
+      btnCreate.innerHTML = '<span class="loading-spinner"></span> Creating...';
+
+      const payload = {
+        exporter, consignee, payment_term, incoterm,
+        bank: document.getElementById("bank").value || null,
+        date: document.getElementById("date").value || null,
+        buyer_order_no: document.getElementById("buyer_order_no").value || "",
+        buyer_order_date: document.getElementById("buyer_order_date").value || null,
+        other_references: document.getElementById("other_references").value || "",
+        pre_carriage: document.getElementById("pre_carriage").value || null,
+        place_of_receipt: document.getElementById("place_of_receipt").value || null,
+        place_of_receipt_by_pre_carrier: document.getElementById("place_of_receipt_by_pre_carrier").value || null,
+        vessel_flight_no: document.getElementById("vessel_flight_no").value || "",
+        port_loading: document.getElementById("port_loading").value || null,
+        port_discharge: document.getElementById("port_discharge").value || null,
+        final_destination: document.getElementById("final_destination").value || null,
+        marks_and_nos: document.getElementById("marks_and_nos").value || "",
+        container_no: document.getElementById("container_no").value || "",
+        kind_of_packages: document.getElementById("kind_of_packages").value || "",
+        validity_for_acceptance: document.getElementById("validity_for_acceptance").value || null,
+        validity_for_shipment: document.getElementById("validity_for_shipment").value || null,
+        partial_shipment: document.getElementById("partial_shipment").value === "true",
+        bank_charges: document.getElementById("bank_charges").value || "0",
+        transshipment: document.getElementById("transshipment").value === "true",
+        terms_and_conditions_template: document.getElementById("terms_template").value || null,
+        terms_and_conditions: document.getElementById("terms_textarea").value || "",
+      };
+
+      try {
+        const created = await fetchJSON(API_BASE, { method: "POST", body: JSON.stringify(payload) });
+        window.location.href = "/app/proforma-invoice/" + created.id + "/";
+      } catch (e) {
+        btnCreate.disabled = false;
+        btnCreate.innerHTML = originalHTML;
+        showError("Create failed: " + e.message);
+      }
+    }
+
+    document.getElementById("btnCancel").addEventListener("click", () => {
+      window.location.href = "/app/proforma-invoice/";
+    });
+    document.getElementById("btnCreate").addEventListener("click", createInvoice);
+
+    setToday();
+    loadMasters();
+  </script>
+{% endblock %}

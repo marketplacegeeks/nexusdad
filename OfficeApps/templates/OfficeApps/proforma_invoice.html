@@ -1,0 +1,414 @@
+{% extends "OfficeApps/base.html" %}
+
+{% block content %}
+  <div class="page-header" style="display:flex; align-items:center; justify-content:space-between;">
+    <div>
+      <h2>Proforma Invoice</h2>
+      <p class="muted">Search, paginate, and control Proforma Invoices.</p>
+    </div>
+    {% if can_create %}
+    <button id="btnCreate" class="btn" style="background:#16a34a; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">
+      + Create Proforma Invoice
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
+      <input id="searchInput" type="text" placeholder="Search by number, consignee, exporter..." style="flex:1; padding:8px; border:1px solid #e5e7eb; border-radius:8px;">
+      <button id="btnSearch" class="btn" style="background:#3b82f6; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">Search</button>
+      <button id="btnClear" class="btn" style="background:#64748b; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">Clear</button>
+    </div>
+
+    <div style="overflow:auto;">
+      <table id="invoiceTable" style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid #e5e7eb;">
+            <th style="padding:8px;">Proforma Invoice No</th>
+            <th style="padding:8px;">Proforma Invoice Date</th>
+            <th style="padding:8px;">Consignee</th>
+            <th style="padding:8px; text-align:right;">Total Amount (USD)</th>
+            <th style="padding:8px;">Status</th>
+            <th style="padding:8px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="invoiceTbody">
+          <!-- Rows injected by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
+      <div id="pageInfo" class="muted">Page 1</div>
+      <div style="display:flex; gap:8px;">
+        <button id="btnPrev" class="btn" style="background:#e5e7eb; color:#0f172a; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">Prev</button>
+        <button id="btnNext" class="btn" style="background:#e5e7eb; color:#0f172a; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Modal -->
+  <div id="createModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; padding:16px; width:520px; max-width:90%;">
+      <h3 style="margin-top:0;">Create Proforma Invoice</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <label class="muted">Exporter</label>
+          <select id="createExporter" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px;"></select>
+        </div>
+        <div>
+          <label class="muted">Consignee</label>
+          <select id="createConsignee" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px;"></select>
+        </div>
+        <div>
+          <label class="muted">Payment Term</label>
+          <select id="createPaymentTerm" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px;"></select>
+        </div>
+        <div>
+          <label class="muted">Incoterm</label>
+          <select id="createIncoterm" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px;"></select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+        <button id="btnCancelCreate" style="background:#e5e7eb; color:#0f172a; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">Cancel</button>
+        <button id="btnSubmitCreate" style="background:#16a34a; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">Create</button>
+      </div>
+      <div id="createError" class="muted" style="color:#dc2626; margin-top:8px; display:none;"></div>
+    </div>
+  </div>
+
+  <div id="roleFlags" style="display:none"
+       data-admin="{{ is_admin|yesno:'true,false' }}"
+       data-maker="{{ is_maker|yesno:'true,false' }}"
+       data-checker="{{ is_checker|yesno:'true,false' }}"
+       data-can-create="{{ can_create|yesno:'true,false' }}">
+  </div>
+
+  <script>
+    // Role flags sourced from hidden DOM dataset to avoid template tokens inside JS
+    const flagsEl = document.getElementById("roleFlags");
+    const ROLE = {
+      admin: flagsEl ? flagsEl.dataset.admin === "true" : false,
+      maker: flagsEl ? flagsEl.dataset.maker === "true" : false,
+      checker: flagsEl ? flagsEl.dataset.checker === "true" : false,
+      canCreate: flagsEl ? flagsEl.dataset.canCreate === "true" : false
+    };
+
+    const API_BASE = "/api/master/proforma-invoices/";
+
+    function getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    let state = {
+      page: 1,
+      search: "",
+      next: null,
+      previous: null,
+      count: 0,
+    };
+
+    function statusBadge(status) {
+      const colors = {
+        "DRAFT": "#64748b",
+        "PENDING_APPROVAL": "#f59e0b",
+        "APPROVED": "#16a34a",
+        "REWORK": "#ef4444",
+      };
+      const bg = colors[status] || "#64748b";
+      return '<span style="display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; color:#fff; background:'+bg+';">'+status.replace("_"," ")+'</span>';
+    }
+
+    function currency(v) {
+      try {
+        return Number(v).toLocaleString(undefined, { style: "currency", currency: "USD" });
+      } catch(e) { return v; }
+    }
+
+    function getAllowedActions(row) {
+      const s = row.status;
+      const actions = [];
+      const viewAction = { key: "view", label: "View", handler: () => goDetail(row.id) };
+      const editAction = { key: "edit", label: "Edit", handler: () => goDetail(row.id) };
+      const submitAction = { key: "submit", label: s === "REWORK" ? "Re-submit for Approval" : "Submit for Approval", handler: () => submitInvoice(row.id) };
+      const approveAction = { key: "approve", label: "Approve", handler: () => approveInvoice(row.id) };
+      const rejectAction = { key: "reject", label: "Reject", handler: () => rejectInvoice(row.id) };
+      const deleteAction = { key: "delete", label: "Delete", handler: () => deactivateInvoice(row.id) };
+      const pdfAction = { key: "pdf", label: "Download PDF", handler: () => pdfInvoice(row.id) };
+
+      if (ROLE.admin) {
+        // Admin: all actions in all statuses
+        actions.push(viewAction, editAction, submitAction, approveAction, rejectAction, deleteAction, pdfAction);
+        return actions;
+      }
+
+      if (ROLE.maker) {
+        if (s === "DRAFT") actions.push(editAction, submitAction, deleteAction);
+        if (s === "REWORK") actions.push(editAction, submitAction);
+        if (s === "APPROVED") actions.push(viewAction, pdfAction);
+      }
+
+      if (ROLE.checker) {
+        if (s === "PENDING_APPROVAL") actions.push(approveAction, rejectAction);
+        if (s === "REWORK") actions.push(editAction, approveAction);
+        if (s === "APPROVED") actions.push(viewAction, pdfAction);
+      }
+
+      return actions;
+    }
+
+    function rowHtml(row) {
+      const actions = getAllowedActions(row);
+      const actionBtnId = "actions-" + row.id;
+      let actionsHtml = "";
+      if (actions.length) {
+        actionsHtml = '<div style="position:relative; display:inline-block;">' +
+          '<button class="btn" id="'+actionBtnId+'" style="background:#3b82f6; color:#fff; border:none; border-radius:8px; padding:4px 8px; cursor:pointer;">Actions ▾</button>' +
+          '<div class="dropdown" style="display:none; position:absolute; background:#fff; border:1px solid #e5e7eb; box-shadow:0 4px 16px rgba(0,0,0,0.1); border-radius:8px; min-width:160px; z-index:10;">' +
+            actions.map(a => '<a href="#" data-key="'+a.key+'" style="display:block; padding:8px 10px; color:#0f172a; text-decoration:none;">'+a.label+'</a>').join('') +
+          '</div>' +
+        '</div>';
+      }
+      const date = row.date || "";
+      const consignee = row.consignee_name || "";
+      const total = currency(row.total_amount_usd || 0);
+      const status = statusBadge(row.status);
+
+      return '<tr data-id="'+row.id+'" style="border-bottom:1px solid #e5e7eb; cursor:pointer;">' +
+        '<td style="padding:8px;">'+row.number+'</td>' +
+        '<td style="padding:8px;">'+date+'</td>' +
+        '<td style="padding:8px;">'+consignee+'</td>' +
+        '<td style="padding:8px; text-align:right;">'+total+'</td>' +
+        '<td style="padding:8px;">'+status+'</td>' +
+        '<td style="padding:8px;">'+actionsHtml+'</td>' +
+      '</tr>';
+    }
+
+    function bindRowInteractions(tr, row) {
+      const dropdownWrap = tr.querySelector(".dropdown");
+      const actionsBtn = tr.querySelector("button[id^='actions-']");
+      if (actionsBtn && dropdownWrap) {
+        actionsBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          dropdownWrap.style.display = dropdownWrap.style.display === "none" || dropdownWrap.style.display === "" ? "block" : "none";
+        });
+        dropdownWrap.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const a = e.target.closest("a[data-key]");
+          if (!a) return;
+          const key = a.getAttribute("data-key");
+          const actions = getAllowedActions(row);
+          const found = actions.find(x => x.key === key);
+          dropdownWrap.style.display = "none";
+          if (found) found.handler();
+        });
+        // Hide dropdown when clicking outside
+        document.addEventListener("click", (ev) => {
+          if (!dropdownWrap.contains(ev.target) && ev.target !== actionsBtn) {
+            dropdownWrap.style.display = "none";
+          }
+        });
+      }
+
+      // Row click (outside actions) -> detail
+      tr.addEventListener("click", (e) => {
+        const clickedActions = e.target.closest(".dropdown") || e.target.closest("button[id^='actions-']");
+        if (clickedActions) return;
+        goDetail(row.id);
+      });
+    }
+
+    async function fetchJSON(url, opts={}) {
+      const resp = await fetch(url, {
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": getCsrfToken(),
+        },
+        ...opts,
+      });
+      if (!resp.ok) {
+        let msg = "Request failed";
+        try { const err = await resp.json(); msg = err.detail || JSON.stringify(err); } catch(e){}
+        throw new Error(msg);
+      }
+      return resp.headers.get("content-type") && resp.headers.get("content-type").includes("application/json")
+        ? resp.json()
+        : resp.blob();
+    }
+
+    async function loadInvoices() {
+      const url = API_BASE + "?page=" + state.page + (state.search ? ("&search=" + encodeURIComponent(state.search)) : "");
+      try {
+        const data = await fetchJSON(url);
+        const tbody = document.getElementById("invoiceTbody");
+        tbody.innerHTML = "";
+        (data.results || []).forEach(row => {
+          const html = rowHtml(row);
+          const temp = document.createElement("tbody");
+          temp.innerHTML = html.trim();
+          const tr = temp.firstChild;
+          tbody.appendChild(tr);
+          bindRowInteractions(tr, row);
+        });
+        state.next = data.next;
+        state.previous = data.previous;
+        state.count = data.count || 0;
+        const pageInfo = document.getElementById("pageInfo");
+        pageInfo.textContent = "Page " + state.page + (state.count ? (" • " + state.count + " records") : "");
+      } catch (e) {
+        alert("Failed to load invoices: " + e.message);
+      }
+    }
+
+    function goDetail(id) {
+      // Avoid template tags inside JS; use static path from urls.py
+      window.location.href = "/app/proforma-invoice/" + id + "/";
+    }
+
+    async function submitInvoice(id) {
+      try {
+        await fetchJSON(API_BASE + id + "/submit/", { method: "POST", body: "{}" });
+        await loadInvoices();
+      } catch(e) { alert("Submit failed: " + e.message); }
+    }
+
+    async function approveInvoice(id) {
+      try {
+        await fetchJSON(API_BASE + id + "/approve/", { method: "POST", body: "{}" });
+        await loadInvoices();
+      } catch(e) { alert("Approve failed: " + e.message); }
+    }
+
+    async function rejectInvoice(id) {
+      const reason = prompt("Enter rejection reason (optional):", "");
+      const payload = JSON.stringify({ notes: reason || "" });
+      try {
+        await fetchJSON(API_BASE + id + "/reject/", { method: "POST", body: payload });
+        await loadInvoices();
+      } catch(e) { alert("Reject failed: " + e.message); }
+    }
+
+    async function deactivateInvoice(id) {
+      if (!confirm("Delete (deactivate) this Draft invoice?")) return;
+      try {
+        await fetchJSON(API_BASE + id + "/deactivate/", { method: "POST", body: "{}" });
+        await loadInvoices();
+      } catch(e) { alert("Delete failed: " + e.message); }
+    }
+
+    async function pdfInvoice(id) {
+      try {
+        const resp = await fetch(API_BASE + id + "/pdf/", { method: "GET", credentials: "same-origin" });
+        if (!resp.ok) {
+          let msg = "PDF failed";
+          try { const err = await resp.json(); msg = err.detail || JSON.stringify(err); } catch(e){}
+          alert(msg);
+          return;
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "ProformaInvoice_" + id + ".pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch(e) { alert("PDF failed: " + e.message); }
+    }
+
+    async function openCreateModal() {
+      document.getElementById("createModal").style.display = "flex";
+      // Load dropdowns
+      const fillSelect = (elId, data, labelFn) => {
+        const items = (data && Array.isArray(data.results)) ? data.results : data;
+        const el = document.getElementById(elId);
+        el.innerHTML = '<option value="">-- Select --</option>' + (items || []).map(x => '<option value="'+x.id+'">'+labelFn(x)+'</option>').join('');
+      };
+      try {
+        const [exporters, consignees, paymentTerms, incoterms] = await Promise.all([
+          fetchJSON("/api/master/exporters/"),
+          fetchJSON("/api/master/consignees/"),
+          fetchJSON("/api/master/payment-terms/"),
+          fetchJSON("/api/master/incoterms/"),
+        ]);
+        fillSelect("createExporter", exporters, x => x.name);
+        fillSelect("createConsignee", consignees, x => x.name);
+        fillSelect("createPaymentTerm", paymentTerms, x => x.name);
+        fillSelect("createIncoterm", incoterms, x => x.code + (x.description ? (" - " + x.description) : ""));
+      } catch(e) {
+        document.getElementById("createError").textContent = "Failed to load master data: " + e.message;
+        document.getElementById("createError").style.display = "block";
+      }
+    }
+
+    function closeCreateModal() {
+      document.getElementById("createModal").style.display = "none";
+      document.getElementById("createError").style.display = "none";
+    }
+
+    async function createInvoice() {
+      const exporter = document.getElementById("createExporter").value;
+      const consignee = document.getElementById("createConsignee").value;
+      const payment_term = document.getElementById("createPaymentTerm").value;
+      const incoterm = document.getElementById("createIncoterm").value;
+      if (!exporter || !consignee || !payment_term || !incoterm) {
+        const err = document.getElementById("createError");
+        err.textContent = "Please select Exporter, Consignee, Payment Term, and Incoterm.";
+        err.style.display = "block";
+        return;
+      }
+      try {
+        const payload = JSON.stringify({ exporter, consignee, payment_term, incoterm });
+        const created = await fetchJSON(API_BASE, { method: "POST", body: payload });
+        closeCreateModal();
+        // Navigate to detail page to edit further
+        goDetail(created.id);
+      } catch(e) {
+        const err = document.getElementById("createError");
+        err.textContent = "Create failed: " + e.message;
+        err.style.display = "block";
+      }
+    }
+
+    document.getElementById("btnSearch").addEventListener("click", () => {
+      state.search = document.getElementById("searchInput").value.trim();
+      state.page = 1;
+      loadInvoices();
+    });
+    document.getElementById("btnClear").addEventListener("click", () => {
+      document.getElementById("searchInput").value = "";
+      state.search = "";
+      state.page = 1;
+      loadInvoices();
+    });
+    document.getElementById("btnPrev").addEventListener("click", () => {
+      if (state.previous) {
+        state.page = Math.max(1, state.page - 1);
+        loadInvoices();
+      }
+    });
+    document.getElementById("btnNext").addEventListener("click", () => {
+      if (state.next) {
+        state.page = state.page + 1;
+        loadInvoices();
+      }
+    });
+
+    // Bind Create modal actions if elements exist (no template tags inside JS)
+    const btnCreate = document.getElementById("btnCreate");
+    if (btnCreate) { btnCreate.addEventListener("click", () => { window.location.href = "/app/proforma-invoice/create/"; }); }
+    const btnCancelCreate = document.getElementById("btnCancelCreate");
+    if (btnCancelCreate) { btnCancelCreate.addEventListener("click", closeCreateModal); }
+    const btnSubmitCreate = document.getElementById("btnSubmitCreate");
+    if (btnSubmitCreate) { btnSubmitCreate.addEventListener("click", createInvoice); }
+
+    // Initial load
+    loadInvoices();
+  </script>
+{% endblock %}
+

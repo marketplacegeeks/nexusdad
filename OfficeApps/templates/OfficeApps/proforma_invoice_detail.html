@@ -1,0 +1,1665 @@
+{% extends "OfficeApps/base.html" %}
+
+{% block content %}
+  <style>
+    .detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .detail-header-content h2 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .detail-header-description {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin: 0;
+    }
+
+    .detail-header-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .status-badge svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .status-badge.draft {
+      background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+      color: white;
+    }
+
+    .status-badge.pending {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+    }
+
+    .status-badge.approved {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: white;
+    }
+
+    .status-badge.rework {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .section-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .section-card:hover {
+      box-shadow: var(--card-shadow-hover);
+      border-color: rgba(240, 125, 60, 0.2);
+    }
+
+    .section-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+    }
+
+    .section-card-title svg {
+      width: 24px;
+      height: 24px;
+      color: var(--accent);
+    }
+
+    .section-card-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-field.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text);
+      background: white;
+      transition: all 0.2s ease;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(240, 125, 60, 0.1);
+    }
+
+    .form-input:disabled,
+    .form-select:disabled {
+      background: linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      border-color: var(--border);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+    }
+
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3);
+    }
+
+    .btn-warning:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text);
+      border: 2px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    .line-items-add-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr 1fr 1fr auto;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+    }
+
+    .line-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .line-items-table thead {
+      background: linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
+    }
+
+    .line-items-table th {
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .line-items-table th.text-right {
+      text-align: right;
+    }
+
+    .line-items-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .line-items-table td.text-right {
+      text-align: right;
+      font-weight: 600;
+    }
+
+    .line-items-table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .line-items-table tbody tr:hover {
+      background: rgba(240, 125, 60, 0.05);
+    }
+
+    .totals-summary {
+      text-align: right;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+
+    .totals-summary-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 40px;
+      margin-bottom: 12px;
+      font-size: 15px;
+    }
+
+    .totals-summary-row.grand-total {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+      padding-top: 12px;
+      border-top: 2px solid var(--border);
+      margin-top: 12px;
+    }
+
+    .totals-summary-label {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .totals-summary-value {
+      color: var(--primary);
+      font-weight: 700;
+      min-width: 150px;
+    }
+
+    .amount-in-words {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .terms-content {
+      white-space: pre-wrap;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-top: 16px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .audit-table thead {
+      background: linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
+    }
+
+    .audit-table th {
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .audit-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .audit-table tbody tr:hover {
+      background: rgba(240, 125, 60, 0.05);
+    }
+
+    .info-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+      border-left: 4px solid #3b82f6;
+      border-radius: 12px;
+      margin-top: 12px;
+      font-size: 14px;
+      color: #1e40af;
+    }
+
+    .info-banner svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .error-message {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+      border-left: 4px solid #ef4444;
+      border-radius: 12px;
+      margin-top: 12px;
+      font-size: 14px;
+      color: #dc2626;
+      font-weight: 500;
+    }
+
+    .error-message svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.show {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .modal-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      color: var(--text-muted);
+      transition: color 0.2s ease;
+    }
+
+    .modal-close:hover {
+      color: var(--text);
+    }
+
+    .modal-close svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 2px solid var(--border);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    .empty-state-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .empty-state-description {
+      font-size: 14px;
+    }
+
+    @media (max-width: 1024px) {
+      .line-items-add-form {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .detail-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .detail-header-actions {
+        width: 100%;
+      }
+
+      .detail-header-actions .btn {
+        flex: 1;
+        justify-content: center;
+      }
+
+      .line-items-add-form {
+        grid-template-columns: 1fr;
+      }
+
+      .line-items-table {
+        font-size: 12px;
+      }
+
+      .section-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+    }
+  </style>
+
+  <div id="roleFlags" style="display:none"
+       data-admin="{{ is_admin|yesno:'true,false' }}"
+       data-maker="{{ is_maker|yesno:'true,false' }}"
+       data-checker="{{ is_checker|yesno:'true,false' }}">
+  </div>
+  <div id="invoiceContext" style="display:none" data-id="{{ invoice_id }}"></div>
+
+  <div class="detail-header">
+    <div class="detail-header-content">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; color: var(--accent);">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <span id="invoiceNumber">Proforma Invoice</span>
+        <span id="invoiceStatusBadge"></span>
+      </h2>
+      <p class="detail-header-description">Full invoice data, line items, totals, terms & conditions, status and audit trail.</p>
+    </div>
+    <div id="actionButtons" class="detail-header-actions">
+      <!-- Action buttons injected by JS -->
+    </div>
+  </div>
+
+  <!-- Header Section -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <h3 class="section-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>
+        Invoice Header
+      </h3>
+      <div class="section-card-actions">
+        <button id="btnSaveHeader" class="btn btn-primary btn-sm" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Save Header
+        </button>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-field">
+        <label class="form-label">Exporter</label>
+        <select id="exporter" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Consignee</label>
+        <select id="consignee" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Proforma Invoice No</label>
+        <input id="number" type="text" class="form-input" disabled>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Proforma Invoice Date</label>
+        <input id="date" type="date" class="form-input">
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Buyer Order No</label>
+        <input id="buyer_order_no" type="text" class="form-input">
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Buyer Order Date</label>
+        <input id="buyer_order_date" type="date" class="form-input">
+      </div>
+
+      <div class="form-field full-width">
+        <label class="form-label">Other References</label>
+        <textarea id="other_references" class="form-textarea"></textarea>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Country of Origin of Goods</label>
+        <input id="origin_country" type="text" class="form-input" disabled>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Country of Final Destination</label>
+        <input id="final_dest_country" type="text" class="form-input" disabled>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Pre-Carriage By</label>
+        <select id="pre_carriage" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Place of Receipt</label>
+        <select id="place_of_receipt" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Payment Terms</label>
+        <select id="payment_term" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Bank</label>
+        <select id="bank" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Place of Receipt by Pre-Carrier</label>
+        <select id="place_of_receipt_by_pre_carrier" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Vessel / Flight No</label>
+        <input id="vessel_flight_no" type="text" class="form-input">
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Incoterms</label>
+        <select id="incoterm" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Port of Loading</label>
+        <select id="port_loading" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Port of Discharge</label>
+        <select id="port_discharge" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Final Destination</label>
+        <select id="final_destination" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Container No</label>
+        <input id="container_no" type="text" class="form-input">
+      </div>
+
+      <div class="form-field full-width">
+        <label class="form-label">Marks & Nos</label>
+        <textarea id="marks_and_nos" class="form-textarea"></textarea>
+      </div>
+
+      <div class="form-field full-width">
+        <label class="form-label">Kind of Packages</label>
+        <input id="kind_of_packages" type="text" class="form-input">
+      </div>
+    </div>
+
+    <div id="headerStatus" class="info-banner" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+      <span id="headerStatusText"></span>
+    </div>
+  </div>
+
+  <!-- Line Items Section -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <h3 class="section-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+        Line Items
+      </h3>
+    </div>
+
+    <div id="addItemForm" class="line-items-add-form" style="display:none;">
+      <input id="li_hs_code" placeholder="HSN Code" class="form-input">
+      <input id="li_item_code" placeholder="Item Code" class="form-input">
+      <input id="li_description" placeholder="Description of Goods" class="form-input">
+      <input id="li_quantity" type="number" step="0.001" min="0" placeholder="Qty (MT)" class="form-input">
+      <input id="li_unit_price_usd" type="number" step="0.01" min="0" placeholder="Rate (USD/MT)" class="form-input">
+      <button id="btnAddItem" class="btn btn-success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Item
+      </button>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="line-items-table">
+        <thead>
+          <tr>
+            <th>Sl No</th>
+            <th>HSN Code</th>
+            <th>Item Code</th>
+            <th>Description</th>
+            <th class="text-right">Qty (MT)</th>
+            <th class="text-right">Rate (USD/MT)</th>
+            <th class="text-right">Amount (USD)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="lineItemsBody">
+          <!-- Items injected by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div id="emptyLineItems" class="empty-state" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <div class="empty-state-title">No Line Items</div>
+      <div class="empty-state-description">Add line items to this invoice using the form above.</div>
+    </div>
+
+    <div id="totalsSummary" class="totals-summary" style="display:none;">
+      <div class="totals-summary-row">
+        <span class="totals-summary-label">Total Quantity (MT):</span>
+        <span class="totals-summary-value" id="totalQty">0.000</span>
+      </div>
+      <div class="totals-summary-row grand-total">
+        <span class="totals-summary-label">Total Amount (USD):</span>
+        <span class="totals-summary-value" id="totalUsd">$0.00</span>
+      </div>
+      <div class="amount-in-words" id="amountInWords"></div>
+    </div>
+  </div>
+
+  <!-- Terms & Conditions Section -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <h3 class="section-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        Terms & Conditions
+      </h3>
+      <div class="section-card-actions">
+        <button id="btnEditTerms" class="btn btn-secondary btn-sm" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Edit Terms
+        </button>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-field">
+        <label class="form-label">Template</label>
+        <select id="terms_template" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Selected Template Name</label>
+        <input id="terms_template_name" type="text" class="form-input" disabled>
+      </div>
+    </div>
+
+    <div id="termsView" class="terms-content"></div>
+
+    <div id="termsEdit" style="display:none; margin-top:16px;">
+      <textarea id="termsTextarea" class="form-textarea" style="min-height:200px;"></textarea>
+      <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:16px;">
+        <button id="btnCancelTerms" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          Cancel
+        </button>
+        <button id="btnSaveTerms" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Save Terms
+        </button>
+      </div>
+      <div id="termsError" class="error-message" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="termsErrorText"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Trail Section -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <h3 class="section-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        Audit Trail
+      </h3>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Actor</th>
+            <th>Action</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="auditBody">
+          <!-- Audit rows injected by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div id="emptyAudit" class="empty-state" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      <div class="empty-state-title">No Audit Records</div>
+      <div class="empty-state-description">Audit trail will appear here as actions are performed.</div>
+    </div>
+  </div>
+
+  <!-- Edit Line Item Modal -->
+  <div id="editLineItemModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Line Item</h3>
+        <button class="modal-close" id="closeEditModal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">HSN Code</label>
+          <input id="edit_hs_code" type="text" class="form-input">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Item Code</label>
+          <input id="edit_item_code" type="text" class="form-input">
+        </div>
+
+        <div class="form-field full-width">
+          <label class="form-label">Description</label>
+          <input id="edit_description" type="text" class="form-input">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Quantity (MT)</label>
+          <input id="edit_quantity" type="number" step="0.001" min="0" class="form-input">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Rate (USD/MT)</label>
+          <input id="edit_unit_price_usd" type="number" step="0.01" min="0" class="form-input">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancelEditModal" class="btn btn-secondary">Cancel</button>
+        <button id="saveEditModal" class="btn btn-primary">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const flagsEl = document.getElementById("roleFlags");
+    const ROLE = {
+      admin: flagsEl ? flagsEl.dataset.admin === "true" : false,
+      maker: flagsEl ? flagsEl.dataset.maker === "true" : false,
+      checker: flagsEl ? flagsEl.dataset.checker === "true" : false,
+    };
+    const ctxEl = document.getElementById("invoiceContext");
+    const INVOICE_ID = ctxEl ? ctxEl.dataset.id : null;
+
+    const API_BASE = "/api/master/proforma-invoices/";
+
+    let currentEditingItem = null;
+
+    function statusBadge(status) {
+      const statusMap = {
+        "DRAFT": { class: "draft", icon: "file-text", label: "Draft" },
+        "PENDING_APPROVAL": { class: "pending", icon: "clock", label: "Pending Approval" },
+        "APPROVED": { class: "approved", icon: "check-circle", label: "Approved" },
+        "REWORK": { class: "rework", icon: "alert-circle", label: "Rework" }
+      };
+      const config = statusMap[status] || { class: "draft", icon: "file-text", label: status };
+      const icons = {
+        "file-text": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>',
+        "clock": '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>',
+        "check-circle": '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>',
+        "alert-circle": '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'
+      };
+      return `<span class="status-badge ${config.class}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          ${icons[config.icon]}
+        </svg>
+        ${config.label}
+      </span>`;
+    }
+
+    function currency(v) {
+      try {
+        return Number(v).toLocaleString(undefined, { style: "currency", currency: "USD" });
+      } catch(e) { return v; }
+    }
+
+    function amountToWords(n) {
+      try {
+        const formatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+        const parts = formatter.format(Number(n || 0)).replace(/,/g, '').split('.');
+        const intPart = parseInt(parts[0]);
+        const fracPart = parseInt(parts[1] || 0);
+
+        const small = ["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"];
+        const tens = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+
+        function numToWords(num) {
+          if (num < 20) return small[num];
+          if (num < 100) return tens[Math.floor(num/10)] + (num%10 ? " " + small[num%10] : "");
+          if (num < 1000) return small[Math.floor(num/100)] + " hundred" + (num%100 ? " " + numToWords(num%100) : "");
+          if (num < 1000000) return numToWords(Math.floor(num/1000)) + " thousand" + (num%1000 ? " " + numToWords(num%1000) : "");
+          if (num < 1000000000) return numToWords(Math.floor(num/1000000)) + " million" + (num%1000000 ? " " + numToWords(num%1000000) : "");
+          return String(num);
+        }
+
+        let words = numToWords(intPart) + " US dollars";
+        if (fracPart) words += " and " + fracPart + " cents";
+        return words.charAt(0).toUpperCase() + words.slice(1);
+      } catch(e) { return ""; }
+    }
+
+    function canEditStatus(status) {
+      if (ROLE.admin) return true;
+      if (ROLE.maker && (status === "DRAFT" || status === "REWORK")) return true;
+      if (ROLE.checker && status === "REWORK") return true;
+      return false;
+    }
+
+    function getAllowedActions(status) {
+      const actions = [];
+
+      const actionDefs = {
+        submit: {
+          label: status === "REWORK" ? "Re-submit for Approval" : "Submit for Approval",
+          class: "btn-primary",
+          icon: '<path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path>',
+          click: submitInvoice
+        },
+        approve: {
+          label: "Approve",
+          class: "btn-success",
+          icon: '<polyline points="20 6 9 17 4 12"></polyline>',
+          click: approveInvoice
+        },
+        reject: {
+          label: "Reject",
+          class: "btn-danger",
+          icon: '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
+          click: rejectInvoice
+        },
+        pdf: {
+          label: "Download PDF",
+          class: "btn-secondary",
+          icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>',
+          click: pdfInvoice
+        }
+      };
+
+      if (ROLE.admin) {
+        actions.push(actionDefs.submit, actionDefs.approve, actionDefs.reject, actionDefs.pdf);
+        return actions;
+      }
+      if (ROLE.maker) {
+        if (status === "DRAFT") actions.push(actionDefs.submit);
+        if (status === "REWORK") actions.push(actionDefs.submit);
+        if (status === "APPROVED") actions.push(actionDefs.pdf);
+      }
+      if (ROLE.checker) {
+        if (status === "PENDING_APPROVAL") actions.push(actionDefs.approve, actionDefs.reject);
+        if (status === "REWORK") actions.push(actionDefs.approve);
+        if (status === "APPROVED") actions.push(actionDefs.pdf);
+      }
+      return actions;
+    }
+
+    function getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    async function fetchJSON(url, opts={}) {
+      const resp = await fetch(url, {
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": getCsrfToken() },
+        ...opts,
+      });
+      if (!resp.ok) {
+        let msg = "Request failed";
+        try { const err = await resp.json(); msg = err.detail || JSON.stringify(err); } catch(e){}
+        throw new Error(msg);
+      }
+      const ct = resp.headers.get("content-type") || "";
+      return ct.includes("application/json") ? resp.json() : resp.blob();
+    }
+
+    function renderActions(inv) {
+      const actionsEl = document.getElementById("actionButtons");
+      actionsEl.innerHTML = "";
+      const actions = getAllowedActions(inv.status);
+      actions.forEach(a => {
+        const btn = document.createElement("button");
+        btn.className = `btn ${a.class}`;
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${a.icon}</svg>${a.label}`;
+        btn.addEventListener("click", () => a.click(inv.id));
+        actionsEl.appendChild(btn);
+      });
+
+      // Update status badge
+      document.getElementById("invoiceStatusBadge").innerHTML = statusBadge(inv.status);
+      document.getElementById("invoiceNumber").textContent = inv.number || "Proforma Invoice";
+    }
+
+    function setHeaderEditable(enabled) {
+      const ids = [
+        "exporter","consignee","date","buyer_order_no","buyer_order_date","other_references",
+        "pre_carriage","place_of_receipt","payment_term","bank","place_of_receipt_by_pre_carrier",
+        "vessel_flight_no","incoterm","port_loading","port_discharge","final_destination",
+        "marks_and_nos","container_no","kind_of_packages"
+      ];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !enabled;
+      });
+      document.getElementById("btnSaveHeader").style.display = enabled ? "inline-flex" : "none";
+    }
+
+    function fillSelect(id, data, labelFn) {
+      const items = (data && Array.isArray(data.results)) ? data.results : data;
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = '<option value="">-- Select --</option>' + (items || []).map(x => '<option value="'+x.id+'">'+labelFn(x)+'</option>').join('');
+    }
+
+    async function loadMasters() {
+      const [
+        exporters, consignees, paymentTerms, incoterms, banks,
+        preCarriage, placeOfReceipt, portsLoading, portsDischarge,
+        finalDestinations, termsTemplates
+      ] = await Promise.all([
+        fetchJSON("/api/master/exporters/"),
+        fetchJSON("/api/master/consignees/"),
+        fetchJSON("/api/master/payment-terms/"),
+        fetchJSON("/api/master/incoterms/"),
+        fetchJSON("/api/master/banks/"),
+        fetchJSON("/api/master/pre-carriage/"),
+        fetchJSON("/api/master/place-of-receipt/"),
+        fetchJSON("/api/master/ports-loading/"),
+        fetchJSON("/api/master/ports-discharge/"),
+        fetchJSON("/api/master/final-destinations/"),
+        fetchJSON("/api/master/terms-conditions/"),
+      ]);
+      fillSelect("exporter", exporters, x => x.name);
+      fillSelect("consignee", consignees, x => x.name);
+      fillSelect("payment_term", paymentTerms, x => x.name);
+      fillSelect("bank", banks, x => (x.bank_name || "") + (x.beneficiary_name ? (" - " + x.beneficiary_name) : ""));
+      fillSelect("incoterm", incoterms, x => x.code + (x.description ? (" - " + x.description) : ""));
+      fillSelect("pre_carriage", preCarriage, x => x.name);
+      fillSelect("place_of_receipt", placeOfReceipt, x => x.name);
+      fillSelect("place_of_receipt_by_pre_carrier", placeOfReceipt, x => x.name);
+      fillSelect("port_loading", portsLoading, x => x.name);
+      fillSelect("port_discharge", portsDischarge, x => x.name);
+      fillSelect("final_destination", finalDestinations, x => x.name);
+      fillSelect("terms_template", termsTemplates, x => x.name);
+
+      document.getElementById("exporter").addEventListener("change", async (e) => {
+        const expId = e.target.value;
+        const originEl = document.getElementById("origin_country");
+        originEl.value = "";
+        if (!expId) return;
+        try {
+          const exp = await fetchJSON("/api/master/exporters/" + expId + "/");
+          const countryId = exp.country;
+          if (countryId) {
+            const country = await fetchJSON("/api/master/countries/" + countryId + "/");
+            originEl.value = (country.name || "") + (country.iso_code ? (" (" + country.iso_code + ")") : "");
+          }
+        } catch (err) {}
+      });
+
+      document.getElementById("final_destination").addEventListener("change", async (e) => {
+        const fdId = e.target.value;
+        const fdEl = document.getElementById("final_dest_country");
+        fdEl.value = "";
+        if (!fdId) return;
+        try {
+          const fd = await fetchJSON("/api/master/final-destinations/" + fdId + "/");
+          const countryId = fd.country;
+          if (countryId) {
+            const country = await fetchJSON("/api/master/countries/" + countryId + "/");
+            fdEl.value = (country.name || "") + (country.iso_code ? (" (" + country.iso_code + ")") : "");
+          }
+        } catch (err) {}
+      });
+
+      document.getElementById("terms_template").addEventListener("change", async (e) => {
+        const tplId = e.target.value;
+        const nameEl = document.getElementById("terms_template_name");
+        const txtEl = document.getElementById("termsTextarea");
+        nameEl.value = "";
+        if (!tplId) { return; }
+        try {
+          const tpl = await fetchJSON("/api/master/terms-conditions/" + tplId + "/");
+          nameEl.value = tpl.name || "";
+          txtEl.value = tpl.content_html || "";
+        } catch (err) {}
+      });
+    }
+
+    function fillHeader(inv) {
+      document.getElementById("number").value = inv.number || "";
+      document.getElementById("date").value = inv.date || "";
+      const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+      setVal("buyer_order_no", inv.buyer_order_no);
+      setVal("buyer_order_date", inv.buyer_order_date);
+      setVal("other_references", inv.other_references);
+      setVal("vessel_flight_no", inv.vessel_flight_no);
+      setVal("marks_and_nos", inv.marks_and_nos);
+      setVal("container_no", inv.container_no);
+      setVal("kind_of_packages", inv.kind_of_packages);
+
+      const choose = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = String(v); };
+      choose("exporter", inv.exporter);
+      choose("consignee", inv.consignee);
+      choose("payment_term", inv.payment_term);
+      choose("bank", inv.bank);
+      choose("incoterm", inv.incoterm);
+      choose("pre_carriage", inv.pre_carriage);
+      choose("place_of_receipt", inv.place_of_receipt);
+      choose("place_of_receipt_by_pre_carrier", inv.place_of_receipt_by_pre_carrier);
+      choose("port_loading", inv.port_loading);
+      choose("port_discharge", inv.port_discharge);
+      choose("final_destination", inv.final_destination);
+
+      const exporterEl = document.getElementById("exporter");
+      const fdEl = document.getElementById("final_destination");
+      if (exporterEl && exporterEl.value) exporterEl.dispatchEvent(new Event("change"));
+      if (fdEl && fdEl.value) fdEl.dispatchEvent(new Event("change"));
+
+      const headerStatus = document.getElementById("headerStatus");
+      const headerStatusText = document.getElementById("headerStatusText");
+      headerStatusText.textContent = `Status: ${inv.status.replace("_", " ")} • Total Amount: ${currency(inv.total_amount_usd || 0)}`;
+      headerStatus.style.display = "flex";
+    }
+
+    async function saveHeader() {
+      const payload = {
+        exporter: document.getElementById("exporter").value || null,
+        consignee: document.getElementById("consignee").value || null,
+        date: document.getElementById("date").value || null,
+        buyer_order_no: document.getElementById("buyer_order_no").value || "",
+        buyer_order_date: document.getElementById("buyer_order_date").value || null,
+        other_references: document.getElementById("other_references").value || "",
+        pre_carriage: document.getElementById("pre_carriage").value || null,
+        place_of_receipt: document.getElementById("place_of_receipt").value || null,
+        bank: document.getElementById("bank").value || null,
+        place_of_receipt_by_pre_carrier: document.getElementById("place_of_receipt_by_pre_carrier").value || null,
+        vessel_flight_no: document.getElementById("vessel_flight_no").value || "",
+        incoterm: document.getElementById("incoterm").value || null,
+        port_loading: document.getElementById("port_loading").value || null,
+        port_discharge: document.getElementById("port_discharge").value || null,
+        final_destination: document.getElementById("final_destination").value || null,
+        marks_and_nos: document.getElementById("marks_and_nos").value || "",
+        container_no: document.getElementById("container_no").value || "",
+        kind_of_packages: document.getElementById("kind_of_packages").value || "",
+      };
+
+      const btn = document.getElementById("btnSaveHeader");
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span> Saving...';
+
+      try {
+        await fetchJSON(API_BASE + INVOICE_ID + "/", { method: "PATCH", body: JSON.stringify(payload) });
+        await loadDetail();
+      } catch (e) {
+        alert("Save header failed: " + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+    }
+
+    function renderLineItems(inv) {
+      const tbody = document.getElementById("lineItemsBody");
+      const emptyState = document.getElementById("emptyLineItems");
+      const totals = document.getElementById("totalsSummary");
+
+      tbody.innerHTML = "";
+      const items = (inv.line_items || []).filter(x => x.is_active !== false);
+
+      if (items.length === 0) {
+        emptyState.style.display = "block";
+        totals.style.display = "none";
+        return;
+      }
+
+      emptyState.style.display = "none";
+      totals.style.display = "block";
+
+      items.forEach((item, idx) => {
+        const tr = document.createElement("tr");
+        const actionsHtml = canEditStatus(inv.status)
+          ? `<button class="btn btn-warning btn-sm" data-act="edit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button class="btn btn-danger btn-sm" data-act="delete" style="margin-left:4px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>`
+          : '';
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${item.hs_code || ""}</td>
+          <td>${item.item_code || ""}</td>
+          <td>${item.description || ""}</td>
+          <td class="text-right">${Number(item.quantity || 0).toFixed(3)}</td>
+          <td class="text-right">${currency(item.unit_price_usd || 0)}</td>
+          <td class="text-right">${currency(item.amount_usd || 0)}</td>
+          <td>${actionsHtml}</td>
+        `;
+
+        if (canEditStatus(inv.status)) {
+          tr.querySelector('[data-act="edit"]').addEventListener('click', () => openEditLineItemModal(item));
+          tr.querySelector('[data-act="delete"]').addEventListener('click', () => deleteLineItem(item.id));
+        }
+        tbody.appendChild(tr);
+      });
+
+      const totalQty = items.reduce((acc, it) => acc + Number(it.quantity || 0), 0);
+      document.getElementById("totalQty").textContent = totalQty.toFixed(3);
+      document.getElementById("totalUsd").textContent = currency(inv.total_amount_usd || 0);
+      document.getElementById("amountInWords").textContent = amountToWords(inv.total_amount_usd || 0);
+    }
+
+    async function addLineItem() {
+      try {
+        const payload = {
+          hs_code: document.getElementById("li_hs_code").value || "",
+          item_code: document.getElementById("li_item_code").value || "",
+          description: document.getElementById("li_description").value || "",
+          quantity: document.getElementById("li_quantity").value || null,
+          unit_price_usd: document.getElementById("li_unit_price_usd").value || null,
+          unit: "MT"
+        };
+        if (!payload.description || !payload.quantity || !payload.unit_price_usd) {
+          alert("Please fill Description, Quantity and Rate.");
+          return;
+        }
+
+        const btn = document.getElementById("btnAddItem");
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading-spinner"></span> Adding...';
+
+        await fetchJSON(API_BASE + INVOICE_ID + "/line-items/", { method: "POST", body: JSON.stringify(payload) });
+        ["li_hs_code","li_item_code","li_description","li_quantity","li_unit_price_usd"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+        await loadDetail();
+
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      } catch (e) {
+        alert("Add line item failed: " + e.message);
+        document.getElementById("btnAddItem").disabled = false;
+      }
+    }
+
+    function openEditLineItemModal(item) {
+      currentEditingItem = item;
+      document.getElementById("edit_hs_code").value = item.hs_code || "";
+      document.getElementById("edit_item_code").value = item.item_code || "";
+      document.getElementById("edit_description").value = item.description || "";
+      document.getElementById("edit_quantity").value = item.quantity || "";
+      document.getElementById("edit_unit_price_usd").value = item.unit_price_usd || "";
+      document.getElementById("editLineItemModal").classList.add("show");
+    }
+
+    function closeEditLineItemModal() {
+      currentEditingItem = null;
+      document.getElementById("editLineItemModal").classList.remove("show");
+    }
+
+    async function saveEditLineItem() {
+      if (!currentEditingItem) return;
+
+      const payload = {
+        hs_code: document.getElementById("edit_hs_code").value || "",
+        item_code: document.getElementById("edit_item_code").value || "",
+        description: document.getElementById("edit_description").value || "",
+        quantity: document.getElementById("edit_quantity").value || null,
+        unit_price_usd: document.getElementById("edit_unit_price_usd").value || null,
+        unit: "MT"
+      };
+
+      const btn = document.getElementById("saveEditModal");
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span> Saving...';
+
+      try {
+        await fetchJSON(API_BASE + INVOICE_ID + "/line-items/" + currentEditingItem.id + "/", { method: "PATCH", body: JSON.stringify(payload) });
+        closeEditLineItemModal();
+        await loadDetail();
+      } catch (e) {
+        alert("Edit line item failed: " + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+    }
+
+    async function deleteLineItem(itemId) {
+      if (!confirm("Delete this line item?")) return;
+      try {
+        await fetchJSON(API_BASE + INVOICE_ID + "/line-items/" + itemId + "/deactivate/", { method: "POST", body: "{}" });
+        await loadDetail();
+      } catch (e) {
+        alert("Delete line item failed: " + e.message);
+      }
+    }
+
+    function renderTerms(inv) {
+      const termsView = document.getElementById("termsView");
+      const editBtn = document.getElementById("btnEditTerms");
+      termsView.textContent = inv.terms_and_conditions || "No terms and conditions specified.";
+      editBtn.style.display = canEditStatus(inv.status) ? "inline-flex" : "none";
+      document.getElementById("termsTextarea").value = inv.terms_and_conditions || "";
+
+      const tplSel = document.getElementById("terms_template");
+      if (tplSel && inv.terms_and_conditions_template) {
+        tplSel.value = String(inv.terms_and_conditions_template);
+        tplSel.dispatchEvent(new Event("change"));
+      }
+    }
+
+    function renderAudit(audit) {
+      const tbody = document.getElementById("auditBody");
+      const emptyState = document.getElementById("emptyAudit");
+
+      tbody.innerHTML = "";
+
+      if (!audit || audit.length === 0) {
+        emptyState.style.display = "block";
+        return;
+      }
+
+      emptyState.style.display = "none";
+
+      audit.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.timestamp}</td>
+          <td>${row.actor_username || row.actor}</td>
+          <td>${row.action}</td>
+          <td>${row.notes || ""}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadDetail() {
+      try {
+        const inv = await fetchJSON(API_BASE + INVOICE_ID + "/");
+        renderActions(inv);
+        const editable = canEditStatus(inv.status);
+        setHeaderEditable(editable);
+
+        const addForm = document.getElementById("addItemForm");
+        if (addForm) addForm.style.display = editable ? "grid" : "none";
+
+        fillHeader(inv);
+        renderLineItems(inv);
+        renderTerms(inv);
+
+        const audit = await fetchJSON(API_BASE + INVOICE_ID + "/audit/");
+        renderAudit(audit);
+      } catch(e) {
+        alert("Failed to load detail: " + e.message);
+      }
+    }
+
+    async function submitInvoice(id) {
+      if (!confirm("Submit this invoice for approval?")) return;
+      try {
+        await fetchJSON(API_BASE + id + "/submit/", { method: "POST", body: "{}" });
+        await loadDetail();
+      } catch(e) { alert("Submit failed: " + e.message); }
+    }
+
+    async function approveInvoice(id) {
+      if (!confirm("Approve this invoice?")) return;
+      try {
+        await fetchJSON(API_BASE + id + "/approve/", { method: "POST", body: "{}" });
+        await loadDetail();
+      } catch(e) { alert("Approve failed: " + e.message); }
+    }
+
+    async function rejectInvoice(id) {
+      const reason = prompt("Enter rejection reason (optional):", "");
+      if (reason === null) return;
+      const payload = JSON.stringify({ notes: reason || "" });
+      try {
+        await fetchJSON(API_BASE + id + "/reject/", { method: "POST", body: payload });
+        await loadDetail();
+      } catch(e) { alert("Reject failed: " + e.message); }
+    }
+
+    async function pdfInvoice(id) {
+      try {
+        const resp = await fetch(API_BASE + id + "/pdf/", { method: "GET", credentials: "same-origin" });
+        if (!resp.ok) {
+          let msg = "PDF failed";
+          try { const err = await resp.json(); msg = err.detail || JSON.stringify(err); } catch(e){}
+          alert(msg);
+          return;
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "ProformaInvoice_" + id + ".pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch(e) { alert("PDF failed: " + e.message); }
+    }
+
+    // Terms editing
+    const btnEditTerms = document.getElementById("btnEditTerms");
+    const termsView = document.getElementById("termsView");
+    const termsEdit = document.getElementById("termsEdit");
+    const btnCancelTerms = document.getElementById("btnCancelTerms");
+    const btnSaveTerms = document.getElementById("btnSaveTerms");
+    const termsTextarea = document.getElementById("termsTextarea");
+    const termsError = document.getElementById("termsError");
+    const termsErrorText = document.getElementById("termsErrorText");
+
+    btnEditTerms.addEventListener("click", () => {
+      termsView.style.display = "none";
+      termsEdit.style.display = "block";
+      termsError.style.display = "none";
+    });
+
+    btnCancelTerms.addEventListener("click", () => {
+      termsEdit.style.display = "none";
+      termsView.style.display = "block";
+      termsError.style.display = "none";
+    });
+
+    btnSaveTerms.addEventListener("click", async () => {
+      const btn = btnSaveTerms;
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span> Saving...';
+
+      try {
+        const payload = JSON.stringify({
+          terms_and_conditions: termsTextarea.value,
+          terms_and_conditions_template: document.getElementById("terms_template").value || null
+        });
+        await fetchJSON(API_BASE + INVOICE_ID + "/", { method: "PATCH", body: payload });
+        termsEdit.style.display = "none";
+        termsView.style.display = "block";
+        await loadDetail();
+      } catch(e) {
+        termsErrorText.textContent = "Save failed: " + e.message;
+        termsError.style.display = "flex";
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+    });
+
+    // Modal event listeners
+    document.getElementById("closeEditModal").addEventListener("click", closeEditLineItemModal);
+    document.getElementById("cancelEditModal").addEventListener("click", closeEditLineItemModal);
+    document.getElementById("saveEditModal").addEventListener("click", saveEditLineItem);
+
+    // Close modal on overlay click
+    document.getElementById("editLineItemModal").addEventListener("click", (e) => {
+      if (e.target.id === "editLineItemModal") closeEditLineItemModal();
+    });
+
+    // Bind header save
+    document.getElementById("btnSaveHeader").addEventListener("click", saveHeader);
+    document.getElementById("btnAddItem").addEventListener("click", addLineItem);
+
+    // Initial load
+    (async () => {
+      if (!INVOICE_ID) {
+        alert("Missing invoice id.");
+        return;
+      }
+      try {
+        await loadMasters();
+        await loadDetail();
+      } catch (e) {
+        alert("Initialization failed: " + e.message);
+      }
+    })();
+  </script>
+{% endblock %}

@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.orig
+
+# Logs
+*.log
+
+# Environments
+.venv/
+venv/
+.env
+
+# macOS
+.DS_Store
+
+# Editors/IDE
+.vscode/
+.idea/
+
+# Django
+db.sqlite3
+staticfiles/
+media/
+
+# Coverage / tests
+.pytest_cache/
+.coverage
+coverage.xml
+
+# Node (if used alongside)
+node_modules/

@@ -1,0 +1,1077 @@
+{% extends "OfficeApps/base.html" %}
+
+{% block content %}
+  <style>
+    .access-banner {
+      background: linear-gradient(135deg, rgba(0, 61, 91, 0.05) 0%, rgba(240, 125, 60, 0.05) 100%);
+      border-left: 4px solid var(--accent);
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .access-banner.read-only {
+      background: linear-gradient(135deg, rgba(100, 116, 139, 0.05) 0%, rgba(148, 163, 184, 0.05) 100%);
+      border-left-color: var(--text-muted);
+    }
+
+    .access-icon {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .access-text {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .master-grid {
+      display: grid;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .panel-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .panel-card:hover {
+      box-shadow: var(--card-shadow-hover);
+      border-color: rgba(240, 125, 60, 0.2);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      background: linear-gradient(135deg, rgba(0, 61, 91, 0.02) 0%, rgba(240, 125, 60, 0.02) 100%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .panel-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--accent);
+    }
+
+    .panel-count {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 14px;
+      background: rgba(0, 61, 91, 0.08);
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 20px;
+    }
+
+    .panel-body {
+      padding: 24px;
+    }
+
+    .add-form {
+      margin-bottom: 24px;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .form-label .required {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      background: white;
+      color: var(--text);
+    }
+
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(240, 125, 60, 0.1);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .richtext-editor {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      transition: all 0.2s ease;
+    }
+
+    .richtext-editor:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(240, 125, 60, 0.1);
+    }
+
+    .richtext-toolbar {
+      display: flex;
+      gap: 4px;
+      padding: 10px;
+      background: rgba(248, 250, 252, 1);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .toolbar-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .toolbar-btn:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .richtext-content {
+      min-height: 120px;
+      padding: 12px;
+      outline: none;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(240, 125, 60, 0.25);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(240, 125, 60, 0.35);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      padding: 8px 16px;
+      background: white;
+      color: var(--primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg);
+      border-color: var(--primary);
+    }
+
+    .btn-edit {
+      padding: 6px 14px;
+      background: rgba(59, 130, 246, 0.1);
+      color: #2563eb;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-right: 8px;
+    }
+
+    .btn-edit:hover {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+
+    .btn-delete {
+      padding: 6px 14px;
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-delete:hover {
+      background: #ef4444;
+      color: white;
+      border-color: #ef4444;
+    }
+
+    .data-table-wrapper {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    .data-table thead {
+      background: linear-gradient(135deg, rgba(0, 61, 91, 0.05) 0%, rgba(240, 125, 60, 0.05) 100%);
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: 14px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .data-table td {
+      padding: 14px 16px;
+      font-size: 14px;
+      color: var(--text);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    }
+
+    .data-table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .data-table tbody tr:hover {
+      background: rgba(240, 125, 60, 0.02);
+    }
+
+    .data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .modal-box {
+      background: white;
+      border-radius: 16px;
+      padding: 0;
+      width: 680px;
+      max-width: 95%;
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(0, 61, 91, 0.02) 0%, rgba(240, 125, 60, 0.02) 100%);
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .modal-footer {
+      padding: 20px 24px;
+      border-top: 1px solid var(--border);
+      background: rgba(248, 250, 252, 1);
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .read-only-message {
+      color: var(--text-muted);
+      font-size: 14px;
+      padding: 16px;
+      text-align: center;
+      background: rgba(148, 163, 184, 0.05);
+      border-radius: 8px;
+    }
+
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .modal-box {
+        max-width: 100%;
+        border-radius: 16px 16px 0 0;
+        margin-top: auto;
+      }
+    }
+  </style>
+
+  <div class="page-header">
+    <h2>Master Data Management</h2>
+    <p class="page-description">Manage core reference data for Proforma Invoices and business operations.</p>
+  </div>
+
+  <div class="access-banner {% if not can_edit %}read-only{% endif %}">
+    <svg class="access-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      {% if can_edit %}
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        <path d="M9 12l2 2 4-4"></path>
+      {% else %}
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      {% endif %}
+    </svg>
+    <div class="access-text">
+      {% if can_edit %}
+        <strong>Full Access:</strong> You have Checker/Admin permissions. You can add, edit, and deactivate records.
+      {% else %}
+        <strong>Read-Only Access:</strong> You can view data but cannot make changes. Contact an administrator to obtain Checker permissions for editing.
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="master-panels" class="master-grid"></div>
+
+  <template id="panel-template">
+    <div class="panel-card">
+      <div class="panel-header">
+        <h3 class="panel-title">
+          <svg class="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span class="panel-title-text"></span>
+        </h3>
+        <span class="panel-count">0 records</span>
+      </div>
+      <div class="panel-body">
+        <div class="panel-add"></div>
+        <div class="panel-table"></div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const CAN_EDIT = JSON.parse('{{ can_edit|yesno:"true,false" }}');
+
+    function getCookie(name) {
+      const cookies = document.cookie ? document.cookie.split('; ') : [];
+      for (let i = 0; i < cookies.length; i++) {
+        const parts = cookies[i].split('=');
+        const key = parts[0];
+        const value = parts.slice(1).join('=');
+        if (key === name) {
+          return decodeURIComponent(value);
+        }
+      }
+      return null;
+    }
+    const CSRF_TOKEN = getCookie('csrftoken');
+
+    async function apiFetch(path, options = {}) {
+      const headers = options.headers || {};
+      headers['Content-Type'] = 'application/json';
+      if (CSRF_TOKEN) {
+        headers['X-CSRFToken'] = CSRF_TOKEN;
+      }
+      const resp = await fetch(path, { ...options, headers });
+      if (!resp.ok) {
+        let msg = '';
+        try {
+          msg = await resp.text();
+        } catch (_) {}
+        throw new Error(`HTTP ${resp.status}: ${msg || resp.statusText}`);
+      }
+      const text = await resp.text();
+      return text ? JSON.parse(text) : null;
+    }
+
+    const API_BASE = '/api/master';
+
+    const RESOURCES = [
+      {
+        key: 'banks',
+        title: 'Bank Master',
+        endpoint: `${API_BASE}/banks/`,
+        fields: [
+          { name: 'beneficiary_name', label: 'Beneficiary Name', type: 'text', required: true },
+          { name: 'bank_name', label: 'Bank Name', type: 'text', required: true },
+          { name: 'branch_name', label: 'Branch Name', type: 'text' },
+          { name: 'branch_address', label: 'Branch Address', type: 'textarea' },
+          { name: 'account_number', label: 'Account Number', type: 'text', required: true },
+          { name: 'swift_code', label: 'SWIFT Code', type: 'text' },
+        ],
+        columns: [
+          { key: 'beneficiary_name', label: 'Beneficiary' },
+          { key: 'bank_name', label: 'Bank' },
+          { key: 'branch_name', label: 'Branch' },
+          { key: 'account_number', label: 'Account No' },
+          { key: 'swift_code', label: 'SWIFT' },
+        ],
+      },
+      {
+        key: 'exporters',
+        title: 'Exporters',
+        endpoint: `${API_BASE}/exporters/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+          { name: 'address', label: 'Address', type: 'textarea' },
+          { name: 'country', label: 'Country', type: 'select', required: true, optionsSource: 'countries' },
+          { name: 'contact_person', label: 'Contact Person', type: 'text' },
+          { name: 'phone_no', label: 'Phone', type: 'text' },
+          { name: 'email_id', label: 'Email', type: 'email' },
+        ],
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'country', label: 'Country', render: (v) => COUNTRY_NAME_BY_ID[v] || v },
+          { key: 'contact_person', label: 'Contact' },
+          { key: 'phone_no', label: 'Phone' },
+          { key: 'email_id', label: 'Email' },
+        ],
+      },
+      {
+        key: 'consignees',
+        title: 'Consignees',
+        endpoint: `${API_BASE}/consignees/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+          { name: 'address', label: 'Address', type: 'textarea' },
+          { name: 'country', label: 'Country', type: 'select', required: true, optionsSource: 'countries' },
+          { name: 'contact_person', label: 'Contact Person', type: 'text' },
+          { name: 'phone_no', label: 'Phone', type: 'text' },
+          { name: 'email_id', label: 'Email', type: 'email' },
+        ],
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'country', label: 'Country', render: (v) => COUNTRY_NAME_BY_ID[v] || v },
+          { key: 'contact_person', label: 'Contact' },
+          { key: 'phone_no', label: 'Phone' },
+          { key: 'email_id', label: 'Email' },
+        ],
+      },
+      {
+        key: 'countries',
+        title: 'Countries',
+        endpoint: `${API_BASE}/countries/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+          { name: 'iso_code', label: 'ISO Code', type: 'text', required: true },
+        ],
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'iso_code', label: 'ISO' },
+        ],
+      },
+      {
+        key: 'payment-terms',
+        title: 'Payment Terms',
+        endpoint: `${API_BASE}/payment-terms/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+        ],
+        columns: [
+          { key: 'name', label: 'Name' },
+        ],
+      },
+      {
+        key: 'incoterms',
+        title: 'Incoterms',
+        endpoint: `${API_BASE}/incoterms/`,
+        fields: [
+          { name: 'code', label: 'Code', type: 'text', required: true },
+          { name: 'description', label: 'Description', type: 'text' },
+        ],
+        columns: [
+          { key: 'code', label: 'Code' },
+          { key: 'description', label: 'Description' },
+        ],
+      },
+      {
+        key: 'ports-loading',
+        title: 'Ports of Loading',
+        endpoint: `${API_BASE}/ports-loading/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+          { name: 'country', label: 'Country', type: 'select', required: true, optionsSource: 'countries' },
+        ],
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'country', label: 'Country', render: (v) => COUNTRY_NAME_BY_ID[v] || v },
+        ],
+      },
+      {
+        key: 'ports-discharge',
+        title: 'Ports of Discharge',
+        endpoint: `${API_BASE}/ports-discharge/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+          { name: 'country', label: 'Country', type: 'select', required: true, optionsSource: 'countries' },
+        ],
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'country', label: 'Country', render: (v) => COUNTRY_NAME_BY_ID[v] || v },
+        ],
+      },
+      {
+        key: 'final-destinations',
+        title: 'Final Destinations',
+        endpoint: `${API_BASE}/final-destinations/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+          { name: 'country', label: 'Country', type: 'select', required: true, optionsSource: 'countries' },
+        ],
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'country', label: 'Country', render: (v) => COUNTRY_NAME_BY_ID[v] || v },
+        ],
+      },
+      {
+        key: 'pre-carriage',
+        title: 'Pre-Carriage',
+        endpoint: `${API_BASE}/pre-carriage/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+        ],
+        columns: [
+          { key: 'name', label: 'Name' },
+        ],
+      },
+      {
+        key: 'place-of-receipt',
+        title: 'Place of Receipt',
+        endpoint: `${API_BASE}/place-of-receipt/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+        ],
+        columns: [
+          { key: 'name', label: 'Name' },
+        ],
+      },
+      {
+        key: 'terms-conditions',
+        title: 'Terms & Conditions Templates',
+        endpoint: `${API_BASE}/terms-conditions/`,
+        fields: [
+          { name: 'name', label: 'Template Name', type: 'text', required: true },
+          { name: 'content_html', label: 'Clauses (Rich Text)', type: 'richtext', required: true },
+        ],
+        columns: [
+          { key: 'name', label: 'Template Name' }
+        ],
+      },
+    ];
+
+    let COUNTRY_OPTIONS = [];
+    const COUNTRY_NAME_BY_ID = {};
+
+    async function loadCountries() {
+      const data = await apiFetch(`${API_BASE}/countries/`);
+      COUNTRY_OPTIONS = (data || []).map(c => ({ value: c.id, label: `${c.name} (${c.iso_code})` }));
+      (data || []).forEach(c => { COUNTRY_NAME_BY_ID[c.id] = c.name; });
+    }
+
+    function buildInput(field, value = '') {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'form-group';
+
+      const label = document.createElement('label');
+      label.className = 'form-label';
+      label.innerHTML = field.label + (field.required ? ' <span class="required">*</span>' : '');
+
+      let input;
+      if (field.type === 'richtext') {
+        const editorWrapper = document.createElement('div');
+        editorWrapper.className = 'richtext-editor';
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'richtext-toolbar';
+
+        const editor = document.createElement('div');
+        editor.className = 'richtext-content';
+        editor.contentEditable = 'true';
+        editor.setAttribute('name', field.name);
+        editor.innerHTML = value != null ? value : '';
+
+        function mkBtn(label, cmd) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'toolbar-btn';
+          b.textContent = label;
+          b.addEventListener('click', () => {
+            editor.focus();
+            if (cmd === 'createLink') {
+              const url = prompt('Enter URL');
+              if (url) document.execCommand(cmd, false, url);
+            } else {
+              document.execCommand(cmd, false, null);
+            }
+          });
+          return b;
+        }
+
+        toolbar.appendChild(mkBtn('Bold', 'bold'));
+        toolbar.appendChild(mkBtn('Italic', 'italic'));
+        toolbar.appendChild(mkBtn('Underline', 'underline'));
+        toolbar.appendChild(mkBtn('Bullet List', 'insertUnorderedList'));
+        toolbar.appendChild(mkBtn('Number List', 'insertOrderedList'));
+        toolbar.appendChild(mkBtn('Link', 'createLink'));
+        toolbar.appendChild(mkBtn('Clear Format', 'removeFormat'));
+
+        editorWrapper.appendChild(toolbar);
+        editorWrapper.appendChild(editor);
+        input = editorWrapper;
+      } else if (field.type === 'textarea') {
+        input = document.createElement('textarea');
+        input.className = 'form-textarea';
+        input.rows = 3;
+      } else if (field.type === 'select') {
+        input = document.createElement('select');
+        input.className = 'form-select';
+        const opts = field.optionsSource === 'countries' ? COUNTRY_OPTIONS : [];
+        opts.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt.value;
+          o.textContent = opt.label;
+          input.appendChild(o);
+        });
+      } else {
+        input = document.createElement('input');
+        input.className = 'form-input';
+        input.type = field.type || 'text';
+      }
+      if (field.type !== 'richtext') {
+        input.name = field.name;
+        input.value = value != null ? value : '';
+      }
+
+      wrapper.appendChild(label);
+      wrapper.appendChild(input);
+      return wrapper;
+    }
+
+    function buildAddForm(resource, onCreate) {
+      const container = document.createElement('div');
+      if (!CAN_EDIT) {
+        container.className = 'read-only-message';
+        container.textContent = 'Read-only access. Contact an administrator to add new records.';
+        return container;
+      }
+
+      const formWrapper = document.createElement('div');
+      formWrapper.className = 'add-form';
+
+      const form = document.createElement('div');
+      form.className = 'form-grid';
+
+      const inputs = {};
+      resource.fields.forEach(f => {
+        const inputEl = buildInput(f);
+        inputs[f.name] = inputEl.querySelector('[name='+f.name+']') || inputEl.querySelector('textarea, select, input');
+        form.appendChild(inputEl);
+      });
+
+      const actions = document.createElement('div');
+      actions.style.gridColumn = 'span 2';
+      const btn = document.createElement('button');
+      btn.className = 'btn-primary';
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Add New Record</span>';
+      btn.addEventListener('click', async () => {
+        const payload = {};
+        let hasError = false;
+        resource.fields.forEach(f => {
+          let val;
+          if (f.type === 'richtext') {
+            const el = inputs[f.name];
+            const text = el.innerText.trim();
+            val = el.innerHTML;
+            if (f.required && !text) {
+              alert(`Please fill ${f.label}`);
+              hasError = true;
+              return;
+            }
+          } else {
+            val = inputs[f.name].value;
+            if (f.required && !val) {
+              alert(`Please fill ${f.label}`);
+              hasError = true;
+              return;
+            }
+          }
+          payload[f.name] = f.type === 'select' ? Number(val) : val;
+        });
+        if (hasError) return;
+        try {
+          await apiFetch(resource.endpoint, { method: 'POST', body: JSON.stringify(payload) });
+          resource.fields.forEach(f => {
+            if (f.type === 'richtext') {
+              inputs[f.name].innerHTML = '';
+            } else {
+              inputs[f.name].value = '';
+            }
+          });
+          await onCreate();
+        } catch (err) {
+          alert('Create failed: ' + err.message);
+        }
+      });
+      actions.appendChild(btn);
+
+      formWrapper.appendChild(form);
+      formWrapper.appendChild(actions);
+      container.appendChild(formWrapper);
+      return container;
+    }
+
+    function buildTable(resource, data, onRefresh) {
+      if (!data || data.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <p>No records found. Add your first record above.</p>
+        `;
+        return empty;
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'data-table-wrapper';
+
+      const table = document.createElement('table');
+      table.className = 'data-table';
+      const thead = document.createElement('thead');
+      const hdrRow = document.createElement('tr');
+
+      function th(label) {
+        const el = document.createElement('th');
+        el.textContent = label;
+        return el;
+      }
+
+      resource.columns.forEach(col => hdrRow.appendChild(th(col.label)));
+      if (CAN_EDIT) hdrRow.appendChild(th('Actions'));
+      thead.appendChild(hdrRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+        resource.columns.forEach(col => {
+          const td = document.createElement('td');
+          const raw = item[col.key];
+          const text = col.render ? col.render(raw) : raw;
+          td.textContent = text != null ? text : '';
+          tr.appendChild(td);
+        });
+
+        if (CAN_EDIT) {
+          const tdAct = document.createElement('td');
+          const btnEdit = document.createElement('button');
+          btnEdit.className = 'btn-edit';
+          btnEdit.textContent = 'Edit';
+          btnEdit.addEventListener('click', () => openEditModal(resource, item, onRefresh));
+          const btnDel = document.createElement('button');
+          btnDel.className = 'btn-delete';
+          btnDel.textContent = 'Deactivate';
+          btnDel.addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to deactivate this record?')) return;
+            try {
+              await apiFetch(`${resource.endpoint}${item.id}/deactivate/`, { method: 'POST' });
+              await onRefresh();
+            } catch (err) {
+              alert('Deactivate failed: ' + err.message);
+            }
+          });
+          tdAct.appendChild(btnEdit);
+          tdAct.appendChild(btnDel);
+          tr.appendChild(tdAct);
+        }
+
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      wrapper.appendChild(table);
+      return wrapper;
+    }
+
+    function openEditModal(resource, item, onRefresh) {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+
+      const box = document.createElement('div');
+      box.className = 'modal-box';
+
+      const header = document.createElement('div');
+      header.className = 'modal-header';
+      const title = document.createElement('h3');
+      title.className = 'modal-title';
+      title.textContent = `Edit ${resource.title}`;
+      header.appendChild(title);
+
+      const body = document.createElement('div');
+      body.className = 'modal-body';
+
+      const form = document.createElement('div');
+      form.className = 'form-grid';
+
+      const inputs = {};
+      resource.fields.forEach(f => {
+        const current = item[f.name];
+        const val = (f.type === 'select') ? current : (current || '');
+        const inputEl = buildInput(f, val);
+        const el = inputEl.querySelector('[name='+f.name+']') || inputEl.querySelector('textarea, select, input');
+        if (f.type === 'select') {
+          el.value = String(current);
+        }
+        inputs[f.name] = el;
+        form.appendChild(inputEl);
+      });
+
+      body.appendChild(form);
+
+      const footer = document.createElement('div');
+      footer.className = 'modal-footer';
+
+      const btnCancel = document.createElement('button');
+      btnCancel.className = 'btn-secondary';
+      btnCancel.textContent = 'Cancel';
+      btnCancel.addEventListener('click', () => document.body.removeChild(modal));
+
+      const btnSave = document.createElement('button');
+      btnSave.className = 'btn-primary';
+      btnSave.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Save Changes</span>';
+      btnSave.addEventListener('click', async () => {
+        const payload = {};
+        let hasError = false;
+        resource.fields.forEach(f => {
+          let val;
+          if (f.type === 'richtext') {
+            const el = inputs[f.name];
+            const text = el.innerText.trim();
+            val = el.innerHTML;
+            if (f.required && !text) {
+              alert(`Please fill ${f.label}`);
+              hasError = true;
+              return;
+            }
+          } else {
+            val = inputs[f.name].value;
+            if (f.required && !val) {
+              alert(`Please fill ${f.label}`);
+              hasError = true;
+              return;
+            }
+          }
+          payload[f.name] = f.type === 'select' ? Number(val) : val;
+        });
+        if (hasError) return;
+        try {
+          await apiFetch(`${resource.endpoint}${item.id}/`, { method: 'PATCH', body: JSON.stringify(payload) });
+          document.body.removeChild(modal);
+          await onRefresh();
+        } catch (err) {
+          alert('Update failed: ' + err.message);
+        }
+      });
+
+      footer.appendChild(btnCancel);
+      footer.appendChild(btnSave);
+
+      box.appendChild(header);
+      box.appendChild(body);
+      box.appendChild(footer);
+      modal.appendChild(box);
+      document.body.appendChild(modal);
+    }
+
+    async function renderPanel(container, resource) {
+      const tpl = document.querySelector('#panel-template');
+      const panel = tpl.content.cloneNode(true);
+      const titleEl = panel.querySelector('.panel-title-text');
+      const countEl = panel.querySelector('.panel-count');
+      const addEl = panel.querySelector('.panel-add');
+      const tableEl = panel.querySelector('.panel-table');
+
+      titleEl.textContent = resource.title;
+
+      const onCreate = async () => {
+        await refresh();
+      };
+      addEl.appendChild(buildAddForm(resource, onCreate));
+
+      async function refresh() {
+        try {
+          const data = await apiFetch(resource.endpoint);
+          countEl.textContent = `${(data || []).length} records`;
+          tableEl.innerHTML = '';
+          tableEl.appendChild(buildTable(resource, data || [], refresh));
+        } catch (err) {
+          countEl.textContent = 'Error';
+          tableEl.innerHTML = `<p class="muted">Failed to load: ${err.message}</p>`;
+        }
+      }
+
+      await refresh();
+      container.appendChild(panel);
+    }
+
+    async function boot() {
+      try {
+        await loadCountries();
+      } catch (_) {}
+      const holder = document.getElementById('master-panels');
+      const orderKeys = [
+        'banks',
+        'exporters',
+        'consignees',
+        'countries',
+        'payment-terms',
+        'incoterms',
+        'ports-loading',
+        'ports-discharge',
+        'final-destinations',
+        'pre-carriage',
+        'place-of-receipt',
+        'terms-conditions',
+      ];
+      for (const key of orderKeys) {
+        const res = RESOURCES.find(r => r.key === key);
+        if (res) {
+          await renderPanel(holder, res);
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', boot);
+  </script>
+{% endblock %}
