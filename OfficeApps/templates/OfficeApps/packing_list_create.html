@@ -1,0 +1,929 @@
+{% extends "OfficeApps/base.html" %}
+
+{% block content %}
+  <style>
+    .create-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .create-header-content h2 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .create-header-description {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin: 0;
+    }
+
+    .form-section {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+      box-shadow: var(--card-shadow-hover);
+      border-color: rgba(240, 125, 60, 0.2);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0 0 24px 0;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-field.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .form-label .required {
+      color: #ef4444;
+      font-size: 16px;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text);
+      background: white;
+      transition: all 0.2s ease;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(240, 125, 60, 0.1);
+    }
+
+    .form-input:disabled {
+      background: #f8fafc;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 2px solid var(--border);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-cancel {
+      background: white;
+      color: var(--text);
+      border: 2px solid var(--border);
+    }
+
+    .btn-cancel:hover {
+      background: #f8fafc;
+    }
+
+    .btn-create {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+    }
+
+    .btn-create:hover {
+      box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+
+    .btn-danger:hover {
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+
+    .btn-secondary:hover {
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .hierarchy-info {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hierarchy-info-icon {
+      width: 48px;
+      height: 48px;
+      background: #3b82f6;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .hierarchy-info-content {
+      flex: 1;
+    }
+
+    .hierarchy-info-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e40af;
+      margin: 0 0 8px 0;
+    }
+
+    .hierarchy-info-text {
+      font-size: 14px;
+      color: #1e40af;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .container-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+
+    .container-table-wrapper {
+      background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%);
+      border: 3px solid #3b82f6;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .container-header-row {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .container-header-row th {
+      padding: 12px;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 2px solid white;
+    }
+
+    .container-data-row td {
+      padding: 12px;
+      background: white;
+      border: 1px solid #e2e8f0;
+    }
+
+    .container-number-badge {
+      background: #3b82f6;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .container-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px solid #cbd5e1;
+    }
+
+    .items-section {
+      margin-top: 20px;
+      padding: 16px;
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+    }
+
+    .items-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .items-table thead {
+      background: #f8fafc;
+      border-bottom: 2px solid #cbd5e1;
+    }
+
+    .items-table th {
+      padding: 10px 8px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+
+    .items-table td {
+      padding: 8px;
+      border: 1px solid #e2e8f0;
+      background: white;
+    }
+
+    .items-table input,
+    .items-table textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    .items-table input:focus,
+    .items-table textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .items-table textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    .items-table input:disabled {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .table-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .table-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .item-number-badge {
+      background: #64748b;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #94a3b8;
+      border: 2px dashed #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .items-table {
+        font-size: 11px;
+      }
+
+      .items-table th,
+      .items-table td {
+        padding: 6px 4px;
+      }
+    }
+  </style>
+
+  <div class="create-header">
+    <div class="create-header-content">
+      <h2>Create Packing List</h2>
+      <p class="create-header-description">Fill in the details for the new packing list.</p>
+    </div>
+  </div>
+
+  <form id="packingListForm">
+    <div class="form-section">
+      <div class="section-header">
+        <h3 class="section-title">Header Details</h3>
+      </div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">Exporter <span class="required">*</span></label>
+          <select id="exporter" class="form-select" required>
+            <option value="">-- Select Exporter --</option>
+            {% for exporter in exporters %}
+              <option value="{{ exporter.id }}">{{ exporter.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Consignee <span class="required">*</span></label>
+          <select id="consignee" class="form-select" required>
+            <option value="">-- Select Consignee --</option>
+            {% for consignee in consignees %}
+              <option value="{{ consignee.id }}">{{ consignee.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Buyer (if different from Consignee)</label>
+          <select id="buyer" class="form-select">
+            <option value="">-- Select Buyer --</option>
+            {% for buyer in buyers %}
+              <option value="{{ buyer.id }}">{{ buyer.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Packing List No</label>
+          <input id="number" type="text" class="form-input" disabled value="Auto-generated when saved">
+        </div>
+        <div class="form-field">
+            <label class="form-label">Packing List Date</label>
+            <input id="date" type="date" class="form-input">
+        </div>
+        <div class="form-field full-width">
+            <label class="form-label">Notify Party</label>
+            <textarea id="notify_party" class="form-textarea" placeholder="Enter Notify Party details"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+        <div class="section-header">
+            <h3 class="section-title">Order References</h3>
+        </div>
+        <div class="form-grid">
+            <div class="form-field">
+                <label class="form-label">PO Number</label>
+                <input id="po_number" type="text" class="form-input" placeholder="Enter PO Number">
+            </div>
+            <div class="form-field">
+                <label class="form-label">PO Date</label>
+                <input id="po_date" type="date" class="form-input">
+            </div>
+            <div class="form-field">
+                <label class="form-label">LC Number</label>
+                <input id="lc_number" type="text" class="form-input" placeholder="Enter LC Number">
+            </div>
+            <div class="form-field">
+                <label class="form-label">LC Date</label>
+                <input id="lc_date" type="date" class="form-input">
+            </div>
+            <div class="form-field">
+                <label class="form-label">BL Number</label>
+                <input id="bl_number" type="text" class="form-input" placeholder="Enter BL Number">
+            </div>
+            <div class="form-field">
+                <label class="form-label">BL Date</label>
+                <input id="bl_date" type="date" class="form-input">
+            </div>
+            <div class="form-field">
+                <label class="form-label">Sales Order (SO) Number</label>
+                <input id="so_number" type="text" class="form-input" placeholder="Enter SO Number">
+            </div>
+            <div class="form-field">
+                <label class="form-label">Sales Order (SO) Date</label>
+                <input id="so_date" type="date" class="form-input">
+            </div>
+            <div class="form-field">
+                <label class="form-label">Other References</label>
+                <input id="other_ref" type="text" class="form-input" placeholder="Enter Other References">
+            </div>
+            <div class="form-field">
+                <label class="form-label">Other References Date</label>
+                <input id="other_ref_date" type="date" class="form-input">
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h3 class="section-title">Containers & Items</h3>
+      </div>
+
+      <div class="hierarchy-info">
+        <div class="hierarchy-info-icon">📦</div>
+        <div class="hierarchy-info-content">
+          <h4 class="hierarchy-info-title">Structure: Packing List → Containers → Items</h4>
+          <p class="hierarchy-info-text">
+            One packing list contains multiple containers. Each container contains multiple items.
+          </p>
+        </div>
+      </div>
+
+      <div id="containers-wrapper">
+        <!-- Container sections will be added here -->
+      </div>
+
+      <button type="button" id="addContainer" class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: 16px;">
+        + Add New Container
+      </button>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" id="btnCancel" class="btn btn-cancel">Cancel</button>
+      <button type="button" id="btnCreate" class="btn btn-create">Create Packing List</button>
+    </div>
+  </form>
+
+  <template id="container-template">
+    <div class="container-table-wrapper">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="container-number-badge"></span>
+          <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: #1e40af;">Container</h4>
+        </div>
+        <button type="button" class="btn btn-danger remove-container">Remove Container</button>
+      </div>
+
+      <table class="container-table">
+        <thead class="container-header-row">
+          <tr>
+            <th style="width: 50%;">Container Reference</th>
+            <th style="width: 50%;">Marks and Numbers</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="container-data-row">
+            <td>
+              <input type="text" class="table-input container-reference" placeholder="e.g., CONT001">
+            </td>
+            <td>
+              <input type="text" class="table-input marks-and-numbers" placeholder="e.g., MRK-123">
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="items-section">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <div class="items-section-header">
+            📋 Items in this Container
+          </div>
+          <button type="button" class="btn btn-secondary add-item" style="padding: 6px 14px; font-size: 12px;">+ Add Item</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th style="width: 90px;">HSN Code</th>
+                <th style="width: 90px;">Item Code</th>
+                <th style="width: 100px;">Packages</th>
+                <th style="width: 250px;">Description</th>
+                <th style="width: 70px;">Quantity</th>
+                <th style="width: 60px;">UOM</th>
+                <th style="width: 100px;">Batch</th>
+                <th style="width: 80px;">Net Wt</th>
+                <th style="width: 80px;">Tare Wt</th>
+                <th style="width: 80px;">Gross Wt</th>
+                <th style="width: 60px;">Action</th>
+              </tr>
+            </thead>
+            <tbody class="items-tbody">
+              <!-- Items will be added here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="item-template">
+    <tr class="item-row">
+      <td style="text-align: center;">
+        <span class="item-number-badge"></span>
+      </td>
+      <td>
+        <input type="text" class="hsn-code" placeholder="HSN">
+      </td>
+      <td>
+        <input type="text" class="item-code" placeholder="Item code">
+      </td>
+      <td>
+        <input type="text" class="packages-number-and-kind" placeholder="e.g., 10 Boxes">
+      </td>
+      <td>
+        <textarea class="description-of-goods" placeholder="Description"></textarea>
+      </td>
+      <td>
+        <input type="number" class="quantity" placeholder="Qty" step="0.01">
+      </td>
+      <td>
+        <input type="text" class="uom" placeholder="Unit">
+      </td>
+      <td>
+        <input type="text" class="batch-details" placeholder="Batch">
+      </td>
+      <td>
+        <input type="number" class="net-weight" placeholder="Net" step="0.01">
+      </td>
+      <td>
+        <input type="number" class="tare-weight" placeholder="Tare" step="0.01">
+      </td>
+      <td>
+        <input type="number" class="gross-weight" placeholder="Gross" disabled>
+      </td>
+      <td style="text-align: center;">
+        <button type="button" class="btn btn-danger remove-item" style="padding: 4px 8px; font-size: 11px;">✕</button>
+      </td>
+    </tr>
+  </template>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const addContainerBtn = document.getElementById("addContainer");
+      const containersWrapper = document.getElementById("containers-wrapper");
+      const containerTemplate = document.getElementById("container-template");
+      const itemTemplate = document.getElementById("item-template");
+      const headerTitle = document.querySelector(".create-header-content h2");
+      const headerDesc = document.querySelector(".create-header-description");
+      const btnCreate = document.getElementById("btnCreate");
+
+      const params = new URLSearchParams(window.location.search);
+      const EDIT_ID = params.get("id");
+      const isEdit = !!EDIT_ID;
+
+      function updateContainerNumbers() {
+        document.querySelectorAll(".container-table-wrapper").forEach((container, index) => {
+          const badge = container.querySelector(".container-number-badge");
+          if (badge) badge.textContent = index + 1;
+        });
+      }
+
+      function updateItemNumbers(tbody) {
+        tbody.querySelectorAll(".item-row").forEach((row, index) => {
+          const badge = row.querySelector(".item-number-badge");
+          if (badge) badge.textContent = index + 1;
+        });
+      }
+
+      function createItem(tbody, itemData = null) {
+        const itemNode = itemTemplate.content.cloneNode(true);
+        const row = itemNode.querySelector(".item-row");
+
+        if (itemData) {
+          row.setAttribute("data-item-id", itemData.id ?? "");
+          row.querySelector(".hsn-code").value = itemData.hsn_code ?? "";
+          row.querySelector(".item-code").value = itemData.item_code ?? "";
+          row.querySelector(".packages-number-and-kind").value = itemData.packages_number_and_kind ?? "";
+          row.querySelector(".description-of-goods").value = itemData.description_of_goods ?? "";
+          row.querySelector(".quantity").value = itemData.quantity ?? "";
+          row.querySelector(".uom").value = itemData.uom ?? "";
+          row.querySelector(".batch-details").value = itemData.batch_details ?? "";
+          row.querySelector(".net-weight").value = itemData.net_weight ?? "";
+          row.querySelector(".tare-weight").value = itemData.tare_weight ?? "";
+          const grossWeightInput = row.querySelector(".gross-weight");
+          if (grossWeightInput) {
+            const gross = (itemData.gross_weight ?? (parseFloat(itemData.net_weight || 0) + parseFloat(itemData.tare_weight || 0)));
+            grossWeightInput.value = (parseFloat(gross) || 0).toFixed(2);
+          }
+        }
+
+        tbody.appendChild(itemNode);
+        updateItemNumbers(tbody);
+      }
+
+      function createContainer(containerData = null) {
+        const containerNode = containerTemplate.content.cloneNode(true);
+        const wrapper = containerNode.querySelector(".container-table-wrapper");
+
+        if (containerData) {
+          wrapper.setAttribute("data-container-id", containerData.id ?? "");
+          wrapper.querySelector(".container-reference").value = containerData.container_reference ?? "";
+          wrapper.querySelector(".marks-and-numbers").value = containerData.marks_and_numbers ?? "";
+          const tbody = wrapper.querySelector(".items-tbody");
+          (containerData.items || []).forEach(item => createItem(tbody, item));
+        }
+
+        containersWrapper.appendChild(containerNode);
+        updateContainerNumbers();
+      }
+
+      function addContainer() {
+        createContainer(null);
+      }
+
+      function addItem(tbody) {
+        createItem(tbody, null);
+      }
+
+      function calculateGrossWeight(row) {
+        const netWeightInput = row.querySelector(".net-weight");
+        const tareWeightInput = row.querySelector(".tare-weight");
+        const grossWeightInput = row.querySelector(".gross-weight");
+
+        const netWeight = parseFloat(netWeightInput.value) || 0;
+        const tareWeight = parseFloat(tareWeightInput.value) || 0;
+
+        grossWeightInput.value = (netWeight + tareWeight).toFixed(2);
+      }
+
+      function formatErrors(err, prefix = "") {
+        if (err == null) return "";
+        if (Array.isArray(err)) {
+          const stringParts = err.filter(e => typeof e === "string");
+          const objectParts = err
+            .filter(e => typeof e === "object" && e !== null)
+            .map((e, idx) => formatErrors(e, `${prefix}[${idx}]`));
+          const parts = [];
+          if (stringParts.length) parts.push(`${prefix}: ${stringParts.join(", ")}`);
+          parts.push(...objectParts);
+          return parts.filter(Boolean).join("\n");
+        }
+        if (typeof err === "object") {
+          return Object.entries(err)
+            .map(([key, value]) => formatErrors(value, prefix ? `${prefix}.${key}` : key))
+            .filter(Boolean)
+            .join("\n");
+        }
+        return `${prefix}: ${err}`;
+      }
+
+      addContainerBtn.addEventListener("click", addContainer);
+
+      containersWrapper.addEventListener("click", function (e) {
+        if (e.target.classList.contains("remove-container")) {
+          if (confirm("Remove this container and all its items?")) {
+            e.target.closest(".container-table-wrapper").remove();
+            updateContainerNumbers();
+          }
+        } else if (e.target.classList.contains("add-item")) {
+          const tbody = e.target.closest(".container-table-wrapper").querySelector(".items-tbody");
+          addItem(tbody);
+        } else if (e.target.classList.contains("remove-item")) {
+          if (confirm("Remove this item?")) {
+            const row = e.target.closest(".item-row");
+            const tbody = row.closest(".items-tbody");
+            row.remove();
+            updateItemNumbers(tbody);
+          }
+        }
+      });
+
+      containersWrapper.addEventListener("input", function (e) {
+        if (e.target.classList.contains("net-weight") || e.target.classList.contains("tare-weight")) {
+          const row = e.target.closest(".item-row");
+          calculateGrossWeight(row);
+        }
+      });
+
+      function buildPayload() {
+        const payload = {
+          exporter: document.getElementById("exporter").value,
+          consignee: document.getElementById("consignee").value,
+          buyer: document.getElementById("buyer").value || null,
+          date: document.getElementById("date").value,
+          notify_party: document.getElementById("notify_party").value,
+          po_number: document.getElementById("po_number").value,
+          po_date: document.getElementById("po_date").value || null,
+          lc_number: document.getElementById("lc_number").value,
+          lc_date: document.getElementById("lc_date").value || null,
+          bl_number: document.getElementById("bl_number").value,
+          bl_date: document.getElementById("bl_date").value || null,
+          so_number: document.getElementById("so_number").value,
+          so_date: document.getElementById("so_date").value || null,
+          other_ref: document.getElementById("other_ref").value,
+          other_ref_date: document.getElementById("other_ref_date").value || null,
+          containers: []
+        };
+
+        document.querySelectorAll(".container-table-wrapper").forEach(containerWrapper => {
+          const containerData = {
+            container_reference: containerWrapper.querySelector(".container-reference").value,
+            marks_and_numbers: containerWrapper.querySelector(".marks-and-numbers").value,
+            items: []
+          };
+          const containerId = containerWrapper.getAttribute("data-container-id");
+          if (containerId) containerData.id = parseInt(containerId, 10);
+
+          containerWrapper.querySelectorAll(".item-row").forEach(itemRow => {
+            const itemData = {
+              hsn_code: itemRow.querySelector(".hsn-code").value,
+              item_code: itemRow.querySelector(".item-code").value,
+              packages_number_and_kind: itemRow.querySelector(".packages-number-and-kind").value,
+              description_of_goods: itemRow.querySelector(".description-of-goods").value,
+              quantity: itemRow.querySelector(".quantity").value,
+              uom: itemRow.querySelector(".uom").value,
+              batch_details: itemRow.querySelector(".batch-details").value,
+              net_weight: itemRow.querySelector(".net-weight").value,
+              tare_weight: itemRow.querySelector(".tare-weight").value
+            };
+            const itemId = itemRow.getAttribute("data-item-id");
+            if (itemId) itemData.id = parseInt(itemId, 10);
+
+            containerData.items.push(itemData);
+          });
+          payload.containers.push(containerData);
+        });
+
+        return payload;
+      }
+
+      btnCreate.addEventListener("click", function() {
+        const payload = buildPayload();
+        const url = isEdit ? `/api/master/packing-lists/${EDIT_ID}/` : `/api/master/packing-lists/`;
+        const method = isEdit ? "PUT" : "POST";
+
+        fetch(url, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken")
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(err => { throw err; });
+          }
+          return response.json();
+        })
+        .then(data => {
+          window.location.href = `/app/packing-list/`;
+        })
+        .catch(error => {
+          console.error(isEdit ? "Error updating packing list:" : "Error creating packing list:", error);
+          const errorMessage = formatErrors(error) || "An unexpected error occurred.";
+          alert(`Error:\n${errorMessage}`);
+        });
+      });
+
+      document.getElementById("btnCancel").addEventListener("click", function() {
+        window.location.href = "/app/packing-list/";
+      });
+
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + "=")) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      if (isEdit) {
+        if (headerTitle) headerTitle.textContent = "Edit Packing List";
+        if (headerDesc) headerDesc.textContent = "Update the details and save your changes.";
+        if (btnCreate) btnCreate.textContent = "Save Changes";
+
+        fetch(`/api/master/packing-lists/${EDIT_ID}/`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin"
+        })
+        .then(resp => {
+          if (!resp.ok) {
+            return resp.json().then(err => { throw err; });
+          }
+          return resp.json();
+        })
+        .then(data => {
+          const numberEl = document.getElementById("number");
+          if (numberEl) numberEl.value = data.number || numberEl.value;
+          document.getElementById("exporter").value = String(data.exporter || "");
+          document.getElementById("consignee").value = String(data.consignee || "");
+          document.getElementById("buyer").value = data.buyer ? String(data.buyer) : "";
+          document.getElementById("date").value = data.date || "";
+          document.getElementById("notify_party").value = data.notify_party || "";
+          document.getElementById("po_number").value = data.po_number || "";
+          document.getElementById("po_date").value = data.po_date || "";
+          document.getElementById("lc_number").value = data.lc_number || "";
+          document.getElementById("lc_date").value = data.lc_date || "";
+          document.getElementById("bl_number").value = data.bl_number || "";
+          document.getElementById("bl_date").value = data.bl_date || "";
+          document.getElementById("so_number").value = data.so_number || "";
+          document.getElementById("so_date").value = data.so_date || "";
+          document.getElementById("other_ref").value = data.other_ref || "";
+          document.getElementById("other_ref_date").value = data.other_ref_date || "";
+
+          containersWrapper.innerHTML = "";
+          (data.containers || []).forEach(container => createContainer(container));
+          updateContainerNumbers();
+        })
+        .catch(error => {
+          console.error("Error loading packing list:", error);
+          const errorMessage = formatErrors(error) || "Failed to load packing list.";
+          alert(`Error:\n${errorMessage}`);
+        });
+      }
+    });
+</script>
+{% endblock %}
