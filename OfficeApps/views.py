@@ -87,6 +87,53 @@ def master_data(request):
 
 
 @login_required
+def commercial_invoice(request):
+    """
+    Commercial Invoice listing page (searchable, paginated).
+    Role-based gating for actions. Primary action button: Create Packaging List.
+    """
+    user = request.user
+    is_admin = user.is_superuser
+    is_maker = is_admin or user.groups.filter(name="Maker").exists()
+    is_checker = is_admin or user.groups.filter(name="Checker").exists()
+    can_create = is_maker or is_admin  # Maker/Admin can create new Commercial Invoice
+    return render(
+        request,
+        "OfficeApps/commercial_invoice.html",
+        {
+            "is_admin": is_admin,
+            "is_maker": is_maker,
+            "is_checker": is_checker,
+            "can_create": can_create,
+        },
+    )
+
+@login_required
+def commercial_invoice_create(request):
+    """
+    Commercial Invoice create flow page (independent of Proforma).
+    Accessible to Admin and Maker.
+    """
+    user = request.user
+    is_admin = user.is_superuser
+    is_maker = is_admin or user.groups.filter(name="Maker").exists()
+    is_checker = is_admin or user.groups.filter(name="Checker").exists()
+
+    if not (is_admin or is_maker):
+        return HttpResponseForbidden("Not allowed to create Commercial Invoice.")
+
+    return render(
+        request,
+        "OfficeApps/commercial_invoice_create.html",
+        {
+            "is_admin": is_admin,
+            "is_maker": is_maker,
+            "is_checker": is_checker,
+        },
+    )
+
+
+@login_required
 def packing_list(request):
     """
     Packing List page.

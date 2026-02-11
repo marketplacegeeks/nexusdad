@@ -1,0 +1,412 @@
+{% extends "OfficeApps/base.html" %}
+
+{% block content %}
+  <div class="page-header" style="display:flex; align-items:center; justify-content:space-between;">
+    <div>
+      <h2>Add Commercial Invoice</h2>
+      <p class="muted">Create a Commercial Invoice from an Approved Packing List.</p>
+    </div>
+    <div>
+      <a href="/app/commercial-invoice/" class="btn" style="background:#e5e7eb; color:#0f172a; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; text-decoration:none;">Back to Commercial Invoices</a>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="margin-top:0;">Step 1: Select Consignee</h3>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <input id="consigneeSearch" type="text" placeholder="Search consignee..." style="flex:1; padding:8px; border:1px solid #e5e7eb; border-radius:8px;">
+      <select id="consigneeSelect" style="flex:1; padding:8px; border:1px solid #e5e7eb; border-radius:8px;">
+        <option value="">-- Select Consignee --</option>
+      </select>
+    </div>
+    <div id="consigneeHelp" class="muted" style="margin-top:6px;">Only consignees with Approved Packing Lists are shown.</div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="margin-top:0;">Step 2: Select Approved Packing List</h3>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <input id="packingListSearch" type="text" placeholder="Search packing list by number..." style="flex:1; padding:8px; border:1px solid #e5e7eb; border-radius:8px;" disabled>
+      <select id="packingListSelect" style="flex:1; padding:8px; border:1px solid #e5e7eb; border-radius:8px;" disabled>
+        <option value="">-- Select Packing List --</option>
+      </select>
+    </div>
+    <div id="packingListHelp" class="muted" style="margin-top:6px;">Approved Packing Lists for selected consignee.</div>
+  </div>
+
+  <div class="card" id="itemsCard" style="margin-bottom:16px; display:none;">
+    <h3 style="margin-top:0;">Step 3: Line Items (Aggregated)</h3>
+    <div class="muted" style="margin-bottom:8px;">
+      Items are aggregated by Item Code and UOM across all containers. If aggregated from multiple containers, description includes "In every container".
+    </div>
+    <div style="overflow:auto;">
+      <table id="itemsTable" style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid #e5e7eb;">
+            <th style="padding:8px;">HSN Code</th>
+            <th style="padding:8px;">No & Kind of Packages</th>
+            <th style="padding:8px;">Description of Goods</th>
+            <th style="padding:8px;">Item Code</th>
+            <th style="padding:8px;">Quantity</th>
+            <th style="padding:8px;">UOM</th>
+            <th id="rateHeader" style="padding:8px;">Rate per UOM</th>
+            <th style="padding:8px;">Amount (USD)</th>
+          </tr>
+        </thead>
+        <tbody id="itemsTbody">
+          <!-- Rows injected by JS -->
+        </tbody>
+        <tfoot>
+          <tr style="border-top:1px solid #e5e7eb;">
+            <td colspan="7" style="padding:8px; text-align:right; font-weight:bold;">Total (USD)</td>
+            <td style="padding:8px; font-weight:bold;" id="totalUsdCell">$0.00</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" id="bankCard" style="margin-bottom:16px; display:none;">
+    <h3 style="margin-top:0;">Step 4: Select Bank</h3>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <select id="bankSelect" style="flex:1; padding:8px; border:1px solid #e5e7eb; border-radius:8px;">
+        <option value="">-- Select Bank --</option>
+      </select>
+    </div>
+    <div class="muted" style="margin-top:6px;">Bank selection is mandatory.</div>
+  </div>
+
+  <div class="card" id="chargesCard" style="margin-bottom:16px; display:none;">
+    <h3 style="margin-top:0;">Step 5: Charges & L/C Details</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+      <div>
+        <label style="display:block; font-weight:600; margin-bottom:4px;">FOB Rate (USD)</label>
+        <input id="fobRate" type="number" step="0.01" min="0" placeholder="0.00" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px;">
+      </div>
+      <div>
+        <label style="display:block; font-weight:600; margin-bottom:4px;">Freight (USD)</label>
+        <input id="freight" type="number" step="0.01" min="0" placeholder="0.00" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px;">
+      </div>
+      <div>
+        <label style="display:block; font-weight:600; margin-bottom:4px;">Insurance (USD)</label>
+        <input id="insurance" type="number" step="0.01" min="0" placeholder="0.00" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px;">
+      </div>
+      <div>
+        <label style="display:block; font-weight:600; margin-bottom:4px;">L/C Details</label>
+        <textarea id="lcDetails" rows="3" placeholder="Enter L/C details..." style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:8px;">
+    <button id="btnSave" class="btn" style="background:#16a34a; color:#fff; border:none; border-radius:8px; padding:10px 14px; cursor:pointer;">Save Commercial Invoice</button>
+    <a href="/app/commercial-invoice/" class="btn" style="background:#64748b; color:#fff; border:none; border-radius:8px; padding:10px 14px; cursor:pointer; text-decoration:none;">Cancel</a>
+  </div>
+
+  <script>
+    const API_BASE = "/api/master/";
+    function getCsrfToken() {
+      const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+      if (m) return decodeURIComponent(m[1]);
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      return meta ? meta.getAttribute('content') : "";
+    }
+    async function fetchJSON(url, opts={}) {
+      const resp = await fetch(url, {
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": getCsrfToken(),
+        },
+        ...opts,
+      });
+      if (!resp.ok) {
+        let msg = "Request failed";
+        try {
+          const err = await resp.json();
+          msg = err.detail || err.message || JSON.stringify(err);
+        } catch (e) {
+          try { msg = (await resp.text()).slice(0, 500); } catch (_) {}
+        }
+        throw new Error(msg);
+      }
+      return resp.json();
+    }
+    function fmtMoney(v) {
+      try { return Number(v).toLocaleString(undefined, { style: "currency", currency: "USD" }); } catch(e){ return v; }
+    }
+    function fmtQty(v) {
+      try { return Number(v).toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); } catch(e){ return v; }
+    }
+
+    const state = {
+      consignees: [],
+      packingLists: [],
+      banks: [],
+      selectedConsigneeId: "",
+      selectedPackingListId: "",
+      aggregated: null, // { packing_list: {...}, line_items: [...] }
+      rates: {}, // key: item_code|unit_id -> Decimal string
+      totalsUsd: 0,
+    };
+
+    function filterOptions(inputEl, selectEl) {
+      const q = (inputEl.value || "").toLowerCase().trim();
+      for (const opt of selectEl.options) {
+        if (!opt.value) { opt.style.display = ""; continue; }
+        const txt = (opt.textContent || "").toLowerCase();
+        opt.style.display = txt.includes(q) ? "" : "none";
+      }
+    }
+
+    function setRateHeader() {
+      const hdr = document.getElementById("rateHeader");
+      if (!state.aggregated || !state.aggregated.line_items) { hdr.textContent = "Rate per UOM"; return; }
+      const uoms = new Set((state.aggregated.line_items || []).map(li => (li.unit || "").trim()).filter(u => u));
+      hdr.textContent = uoms.size === 1 ? ("Rate per " + Array.from(uoms)[0]) : "Rate per UOM";
+    }
+
+    function recalcTotals() {
+      let sum = 0;
+      const tbody = document.getElementById("itemsTbody");
+      const rows = tbody.querySelectorAll("tr");
+      for (const tr of rows) {
+        const amtCell = tr.querySelector('[data-role="amount"]');
+        const val = parseFloat((amtCell.dataset.value || "0")) || 0;
+        sum += val;
+      }
+      state.totalsUsd = sum;
+      document.getElementById("totalUsdCell").textContent = fmtMoney(sum);
+      // Enable save only if valid: bank selected, all rates > 0, line items exist
+      const validRates = validateRatesEntered();
+      const canSave = !!state.selectedPackingListId && !!document.getElementById("bankSelect").value && validRates;
+    }
+
+    function validateRatesEntered() {
+      if (!state.aggregated || !(state.aggregated.line_items || []).length) return false;
+      for (const li of state.aggregated.line_items) {
+        const key = (li.item_code || "") + "|" + (li.unit_id || 0);
+        const rate = state.rates[key];
+        if (rate === undefined || rate === null) return false;
+        const num = parseFloat(rate);
+        if (!isFinite(num) || num <= 0) return false;
+      }
+      return true;
+    }
+
+    function renderLineItems() {
+      setRateHeader();
+      const tbody = document.getElementById("itemsTbody");
+      tbody.innerHTML = "";
+      for (const li of (state.aggregated.line_items || [])) {
+        const key = (li.item_code || "") + "|" + (li.unit_id || 0);
+        const qty = parseFloat(li.quantity || 0) || 0;
+        const rate = state.rates[key] !== undefined ? parseFloat(state.rates[key]) || 0 : 0;
+        const amount = qty * rate;
+
+        const tr = document.createElement("tr");
+        tr.style.borderBottom = "1px solid #e5e7eb";
+        tr.innerHTML = `
+          <td style="padding:8px;">${li.hs_code || ""}</td>
+          <td style="padding:8px;">${li.packages_number_and_kind || ""}</td>
+          <td style="padding:8px;">${li.description || ""}</td>
+          <td style="padding:8px;">${li.item_code || ""}</td>
+          <td style="padding:8px;">${fmtQty(qty)}</td>
+          <td style="padding:8px;">${li.unit || ""}</td>
+          <td style="padding:8px;">
+            <input type="number" step="0.01" min="0" data-key="${key}" class="rate-input" value="${state.rates[key] !== undefined ? state.rates[key] : ''}" style="width:120px; padding:6px; border:1px solid #e5e7eb; border-radius:6px;">
+          </td>
+          <td style="padding:8px;" data-role="amount" data-value="${amount}">${fmtMoney(amount)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      // Bind rate change events
+      tbody.querySelectorAll(".rate-input").forEach(inp => {
+        inp.addEventListener("input", (e) => {
+          const key = e.target.dataset.key;
+          const val = e.target.value;
+          state.rates[key] = val;
+          // Update amount cell for this row
+          const tr = e.target.closest("tr");
+          const tds = tr.querySelectorAll("td");
+          const qtyText = tds[4].textContent;
+          const qty = parseFloat((qtyText || "0").replace(/,/g, "")) || 0;
+          const rateNum = parseFloat(val) || 0;
+          const amount = qty * rateNum;
+          const amtCell = tr.querySelector('[data-role="amount"]');
+          amtCell.dataset.value = amount;
+          amtCell.textContent = fmtMoney(amount);
+          recalcTotals();
+        });
+      });
+
+      recalcTotals();
+    }
+
+    async function loadConsignees() {
+      try {
+        const data = await fetchJSON(API_BASE + "consignees/with-approved-packing-lists/");
+        state.consignees = data || [];
+        const sel = document.getElementById("consigneeSelect");
+        sel.innerHTML = '<option value="">-- Select Consignee --</option>';
+        for (const c of state.consignees) {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name;
+          sel.appendChild(opt);
+        }
+      } catch(e) {
+        alert("Failed to load consignees: " + e.message);
+      }
+    }
+
+    async function loadPackingLists(consigneeId) {
+      try {
+        const data = await fetchJSON(API_BASE + "commercial-invoices/approved-for-consignee/?consignee_id=" + encodeURIComponent(consigneeId));
+        state.packingLists = data || [];
+        const sel = document.getElementById("packingListSelect");
+        sel.innerHTML = '<option value="">-- Select Packing List --</option>';
+        for (const pl of state.packingLists) {
+          const opt = document.createElement("option");
+          opt.value = pl.id;
+          opt.textContent = pl.number || ("PL #" + pl.id);
+          sel.appendChild(opt);
+        }
+      } catch(e) {
+        alert("Failed to load packing lists: " + e.message);
+      }
+    }
+
+    async function loadAggregation(plId) {
+      try {
+        const data = await fetchJSON(API_BASE + "packing-lists/aggregate-from-packing-list/?packing_list_id=" + encodeURIComponent(plId));
+        state.aggregated = data;
+        state.rates = {};
+        // Pre-fill blank rates
+        for (const li of (data.line_items || [])) {
+          const key = (li.item_code || "") + "|" + (li.unit_id || 0);
+          state.rates[key] = li.unit_price_usd !== null && li.unit_price_usd !== undefined ? li.unit_price_usd : "";
+        }
+        document.getElementById("itemsCard").style.display = "block";
+        renderLineItems();
+        document.getElementById("bankCard").style.display = "block";
+        document.getElementById("chargesCard").style.display = "block";
+        await loadBanks();
+      } catch(e) {
+        alert("Failed to aggregate items: " + e.message);
+      }
+    }
+
+    async function loadBanks() {
+      try {
+        const data = await fetchJSON(API_BASE + "banks/");
+        state.banks = (data && data.results) ? data.results : (data || []);
+        const sel = document.getElementById("bankSelect");
+        sel.innerHTML = '<option value="">-- Select Bank --</option>';
+        for (const b of state.banks) {
+          const opt = document.createElement("option");
+          opt.value = b.id;
+          opt.textContent = (b.bank_name || "") + " - " + (b.beneficiary_name || "");
+          sel.appendChild(opt);
+        }
+        recalcTotals();
+      } catch(e) {
+        alert("Failed to load banks: " + e.message);
+      }
+    }
+
+    async function saveCommercialInvoice() {
+      // Validate
+      if (!state.selectedConsigneeId) { alert("Consignee is required."); return; }
+      if (!state.selectedPackingListId) { alert("Packing List is required."); return; }
+      const bankId = document.getElementById("bankSelect").value;
+      if (!bankId) { alert("Bank selection is mandatory."); return; }
+      if (!validateRatesEntered()) { alert("Enter Rate per UOM for all rows (greater than zero)."); return; }
+
+      // Build payload of rates keyed by item_code + unit_id
+      const line_items_payload = [];
+      for (const li of (state.aggregated.line_items || [])) {
+        const key = (li.item_code || "") + "|" + (li.unit_id || 0);
+        const rate = state.rates[key];
+        line_items_payload.push({
+          item_code: li.item_code || "",
+          unit_id: li.unit_id || 0,
+          unit_price_usd: rate
+        });
+      }
+
+      try {
+        const fobRateVal = parseFloat(document.getElementById("fobRate")?.value || "0") || 0;
+        const freightVal = parseFloat(document.getElementById("freight")?.value || "0") || 0;
+        const insuranceVal = parseFloat(document.getElementById("insurance")?.value || "0") || 0;
+        const lcDetailsVal = (document.getElementById("lcDetails")?.value || "").trim();
+
+        const payload = {
+          packing_list_id: state.selectedPackingListId,
+          bank_id: bankId,
+          line_items: line_items_payload,
+          fob_rate: fobRateVal,
+          freight: freightVal,
+          insurance: insuranceVal,
+          lc_details: lcDetailsVal
+        };
+        const resp = await fetchJSON(API_BASE + "packing-lists/create-from-packing-list/", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        // Success: redirect to listing page
+        window.location.href = "/app/commercial-invoice/";
+      } catch(e) {
+        alert("Save failed: " + e.message);
+      }
+    }
+
+    // Bind events
+    document.getElementById("consigneeSearch").addEventListener("input", () => {
+      filterOptions(document.getElementById("consigneeSearch"), document.getElementById("consigneeSelect"));
+    });
+    document.getElementById("packingListSearch").addEventListener("input", () => {
+      filterOptions(document.getElementById("packingListSearch"), document.getElementById("packingListSelect"));
+    });
+    document.getElementById("consigneeSelect").addEventListener("change", async (e) => {
+      const id = e.target.value;
+      state.selectedConsigneeId = id;
+      const plSearch = document.getElementById("packingListSearch");
+      const plSelect = document.getElementById("packingListSelect");
+      if (!id) {
+        plSearch.disabled = true;
+        plSelect.disabled = true;
+        plSearch.value = "";
+        plSelect.innerHTML = '<option value="">-- Select Packing List --</option>';
+        document.getElementById("itemsCard").style.display = "none";
+        document.getElementById("bankCard").style.display = "none";
+        const ch = document.getElementById("chargesCard"); if (ch) ch.style.display = "none";
+        return;
+      }
+      plSearch.disabled = false;
+      plSelect.disabled = false;
+      await loadPackingLists(id);
+      // Reset downstream state
+      state.selectedPackingListId = "";
+      document.getElementById("itemsCard").style.display = "none";
+      document.getElementById("bankCard").style.display = "none";
+    });
+    document.getElementById("packingListSelect").addEventListener("change", async (e) => {
+      const id = e.target.value;
+      state.selectedPackingListId = id;
+      if (!id) {
+        document.getElementById("itemsCard").style.display = "none";
+        document.getElementById("bankCard").style.display = "none";
+        const ch2 = document.getElementById("chargesCard"); if (ch2) ch2.style.display = "none";
+        return;
+      }
+      await loadAggregation(id);
+      recalcTotals();
+    });
+    document.getElementById("btnSave").addEventListener("click", saveCommercialInvoice);
+
+    // Init
+    loadConsignees();
+  </script>
+{% endblock %}

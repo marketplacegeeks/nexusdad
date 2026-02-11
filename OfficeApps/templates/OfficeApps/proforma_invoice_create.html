@@ -422,33 +422,17 @@
         </div>
 
         <div class="form-field">
-          <label class="form-label">
-            Country of Origin of Goods
-            <span class="derived-field-indicator">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                <line x1="12" y1="22.08" x2="12" y2="12"></line>
-              </svg>
-              Derived from Exporter
-            </span>
-          </label>
-          <input id="origin_country" type="text" class="form-input" disabled>
+          <label class="form-label">Country of Origin of Goods</label>
+          <select id="origin_country" class="form-select">
+            <option value="">-- Select Country --</option>
+          </select>
         </div>
 
         <div class="form-field">
-          <label class="form-label">
-            Country of Final Destination
-            <span class="derived-field-indicator">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                <line x1="12" y1="22.08" x2="12" y2="12"></line>
-              </svg>
-              Derived from Final Destination
-            </span>
-          </label>
-          <input id="final_dest_country" type="text" class="form-input" disabled>
+          <label class="form-label">Country of Final Destination</label>
+          <select id="final_dest_country" class="form-select">
+            <option value="">-- Select Country --</option>
+          </select>
         </div>
       </div>
     </div>
@@ -521,7 +505,7 @@
         </div>
 
         <div class="form-field full-width">
-          <label class="form-label">Kind of Packages</label>
+          <label class="form-label">No & Kind of Packages</label>
           <input id="kind_of_packages" type="text" class="form-input" placeholder="e.g., Cartons, Pallets, Boxes">
         </div>
       </div>
@@ -629,14 +613,10 @@
 
         <div class="form-field full-width">
           <label class="form-label">Terms & Conditions Content</label>
-          <textarea id="terms_textarea" class="form-textarea" placeholder="Enter or edit terms & conditions. Select a template above to load pre-defined content." style="min-height: 160px;"></textarea>
-          <div class="help-text">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-            You can edit the content after selecting a template
+          <div id="terms_preview" class="form-textarea" style="min-height: 160px; background-color: #f8f9fa; overflow-y: auto; padding: 12px 16px;">
+             <span style="color: #6c757d;">Content is loaded from the selected template.</span>
           </div>
+          <textarea id="terms_textarea" name="terms_and_conditions" style="display:none;"></textarea>
         </div>
       </div>
     </div>
@@ -722,7 +702,7 @@
         const [
           exporters, consignees, paymentTerms, incoterms, banks,
           preCarriage, placeOfReceipt, portsLoading, portsDischarge,
-          finalDestinations, termsTemplates
+          finalDestinations, termsTemplates, countries
         ] = await Promise.all([
           fetchJSON("/api/master/exporters/"),
           fetchJSON("/api/master/consignees/"),
@@ -735,6 +715,7 @@
           fetchJSON("/api/master/ports-discharge/"),
           fetchJSON("/api/master/final-destinations/"),
           fetchJSON("/api/master/terms-conditions/"),
+          fetchJSON("/api/master/countries/"),
         ]);
 
         const fillSelect = (id, data, labelFn) => {
@@ -757,48 +738,26 @@
         fillSelect("port_discharge", portsDischarge, x => x.name + " - " + (x.country || ""));
         fillSelect("final_destination", finalDestinations, x => x.name + " - " + (x.country || ""));
         fillSelect("terms_template", termsTemplates, x => x.name);
-
-        document.getElementById("exporter").addEventListener("change", async (e) => {
-          const expId = e.target.value;
-          const originEl = document.getElementById("origin_country");
-          originEl.value = "";
-          if (!expId) return;
-          try {
-            const exp = await fetchJSON("/api/master/exporters/" + expId + "/");
-            const countryId = exp.country;
-            if (countryId) {
-              const country = await fetchJSON("/api/master/countries/" + countryId + "/");
-              originEl.value = (country.name || "") + (country.iso_code ? (" (" + country.iso_code + ")") : "");
-            }
-          } catch (err) { }
-        });
-
-        document.getElementById("final_destination").addEventListener("change", async (e) => {
-          const fdId = e.target.value;
-          const fdEl = document.getElementById("final_dest_country");
-          fdEl.value = "";
-          if (!fdId) return;
-          try {
-            const fd = await fetchJSON("/api/master/final-destinations/" + fdId + "/");
-            const countryId = fd.country;
-            if (countryId) {
-              const country = await fetchJSON("/api/master/countries/" + countryId + "/");
-              fdEl.value = (country.name || "") + (country.iso_code ? (" (" + country.iso_code + ")") : "");
-            }
-          } catch (err) { }
-        });
+        fillSelect("origin_country", countries, x => x.name + " (" + x.iso_code + ")");
+        fillSelect("final_dest_country", countries, x => x.name + " (" + x.iso_code + ")");
 
         document.getElementById("terms_template").addEventListener("change", async (e) => {
           const tplId = e.target.value;
           const nameEl = document.getElementById("terms_template_name");
-          const txtEl = document.getElementById("terms_textarea");
+          const previewEl = document.getElementById("terms_preview");
+          const hiddenTextarea = document.getElementById("terms_textarea");
+
           nameEl.value = "";
-          txtEl.value = "";
+          previewEl.innerHTML = '<span style="color: #6c757d;">Content is loaded from the selected template.</span>';
+          hiddenTextarea.value = "";
+
           if (!tplId) return;
           try {
             const tpl = await fetchJSON("/api/master/terms-conditions/" + tplId + "/");
             nameEl.value = tpl.name || "";
-            txtEl.value = tpl.content_html || "";
+            const htmlContent = tpl.content_html || "";
+            previewEl.innerHTML = htmlContent;
+            hiddenTextarea.value = htmlContent;
           } catch (err) { }
         });
 
@@ -832,6 +791,8 @@
         buyer_order_no: document.getElementById("buyer_order_no").value || "",
         buyer_order_date: document.getElementById("buyer_order_date").value || null,
         other_references: document.getElementById("other_references").value || "",
+        origin_country: document.getElementById("origin_country").value || null,
+        final_destination_country: document.getElementById("final_dest_country").value || null,
         pre_carriage: document.getElementById("pre_carriage").value || null,
         place_of_receipt: document.getElementById("place_of_receipt").value || null,
         place_of_receipt_by_pre_carrier: document.getElementById("place_of_receipt_by_pre_carrier").value || null,

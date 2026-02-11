@@ -16,7 +16,8 @@ from reportlab.lib import colors  # Color definitions (colors.black, colors.whit
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle  # Text styling
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, PageBreak  # Layout elements
 from reportlab.lib.units import mm  # Millimeter unit for measurements (1mm = 2.834645669 points)
-from reportlab.lib.enums import TA_CENTER  # Text alignment constants
+from reportlab.lib.enums import TA_CENTER
+from num2words import num2words
 
 
 # ============================================================================
@@ -56,43 +57,19 @@ def fmt_qty(v: Any) -> str:
         return safe(v)
 
 
-def amount_to_words(n: Any) -> str:
-    """Convert numeric amount to written words
-    Example: 1234.56 -> "One Thousand Two Hundred Thirty-Four Dollars and 56 cents"
+def amount_to_words(n: Any, currency: str = "Dollars") -> str:
+    """Convert numeric amount to written words in the specified format.
+    Example: 1518355239 -> "One Billion Five Hundred Eighteen Million Three Hundred Fifty-Five Thousand Two Hundred Thirty-Nine Dollars Only"
     """
     try:
-        n = float(n or 0)
+        # The currency name is taken from the proforma invoice model
+        n = int(float(n or 0))
+        # Convert the number to words, capitalize the first letter of each word
+        words = num2words(n).title()
+        # Append the currency name and "Only"
+        return f"{words} {currency} Only"
     except Exception:
-        n = 0.0
-
-    # Split into dollars and cents
-    int_part = int(n)
-    frac_part = int(round((n - int_part) * 100))
-
-    # Word arrays for number conversion
-    small = ["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"]
-    tens = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"]
-
-    def num_to_words(num: int) -> str:
-        """Recursively convert numbers to words"""
-        if num < 20: return small[num]
-        if num < 100: return tens[num//10] + ((" " + small[num%10]) if (num%10) else "")
-        if num < 1000: return small[num//100] + " hundred" + ((" and " + num_to_words(num%100)) if (num%100) else "")
-        if num < 1000000:
-            thousands = num // 1000
-            rem = num % 1000
-            return num_to_words(thousands) + " thousand" + ((" " + num_to_words(rem)) if rem else "")
-        if num < 1000000000:
-            millions = num // 1000000
-            rem = num % 1000000
-            return num_to_words(millions) + " million" + ((" " + num_to_words(rem)) if rem else "")
-        return str(num)
-
-    # Build the final string
-    words = num_to_words(int_part).title() + " Dollars"
-    if frac_part:
-        words += " and " + str(frac_part) + " cents"
-    return words
+        return ""
 
 
 # ============================================================================
@@ -214,6 +191,28 @@ def generate_proforma_invoice_pdf_bytes(invoice) -> bytes:
     origin_country = safe(getattr(getattr(exp, 'country', None), 'name', None))
     final_country = safe(getattr(getattr(fd, 'country', None), 'name', None))
 
+    # Format Consignee details
+    cons_name = safe(getattr(cons, 'name', ''))
+    cons_address = safe(getattr(cons, 'address', ''))
+    cons_country = safe(getattr(getattr(cons, 'country', None), 'name', ''))
+    cons_email = safe(getattr(cons, 'email_id', ''))
+    
+    address_parts = []
+    if cons_address:
+        address_parts.append(cons_address)
+    if cons_country:
+        address_parts.append(cons_country)
+    
+    address_line = ", ".join(address_parts)
+
+    cons_lines = [
+        cons_name,
+        address_line,
+        cons_email
+    ]
+    cons_lines = [line for line in cons_lines if line]
+    consignee_details_html = "<br/>".join(cons_lines)
+
     # Get related field names
     incoterm_disp = safe(getattr(invoice.incoterm, "code", ""))
     payment_term_name = safe(getattr(getattr(invoice, "payment_term", None), "name", None))
@@ -300,7 +299,7 @@ def generate_proforma_invoice_pdf_bytes(invoice) -> bytes:
         # ----------------------------------------------------------------
         [
             # Columns 0-1: Exporter name (will span columns 0-1, rows 0-2)
-            Paragraph(f"<b>Exporter:</b><br/>{safe(getattr(exp, 'name', ''))}", style_text),
+            Paragraph(f"<b>Exporter:</b><br/>{safe(getattr(exp, 'name', ''))}<br/>{safe(getattr(exp, 'address', ''))}, {safe(getattr(exp, 'country', ''))}<br/>{safe(getattr(exp, 'email_id', ''))}", style_text),
             "",  # Placeholder for column 1 (merged with column 0)
             # Columns 2-3: Invoice number and date (will span columns 2-3, row 0)
             Paragraph(f"<b>Proforma Invoice No & Date:</b><br/>{safe(invoice.number)} & {safe(invoice.date)}", style_text),
@@ -336,7 +335,7 @@ def generate_proforma_invoice_pdf_bytes(invoice) -> bytes:
         # ----------------------------------------------------------------
         [
             # Columns 0-1: Consignee name (will span columns 0-1, rows 3-5)
-            Paragraph(f"<b>Consignee:</b><br/>{safe(getattr(cons, 'name', ''))}", style_text),
+            Paragraph(f"<b>Consignee:</b><br/>{consignee_details_html}", style_text),
             "",  # Placeholder for column 1
             # Columns 2-3: Buyer if other than consignee (will span columns 2-3, rows 3-4)
             Paragraph(f"<b>Buyer if other than consignee</b><br/>{safe(getattr(cons, 'name', ''))}", style_text),
@@ -677,7 +676,17 @@ def generate_proforma_invoice_pdf_bytes(invoice) -> bytes:
     # AMOUNT IN WORDS (Plain Paragraph)
     # ========================================================================
     # Not in a table, just a simple paragraph
-    story.append(Paragraph(f"<b>Amount in Words:</b> {amount_to_words(invoice.total_amount_usd)}", style_text))
+    total_amount_usd = invoice.total_amount_usd
+    currency_name = "USD"
+
+    # Comma-separated amount
+    formatted_amount = f"{int(total_amount_usd):,} {currency_name}"
+    story.append(Paragraph(f"<b>Amount:</b> {formatted_amount}", style_text))
+    story.append(Spacer(1, 4))
+
+    # Amount in words
+    amount_in_words_str = amount_to_words(total_amount_usd, currency=currency_name)
+    story.append(Paragraph(f"<b>Amount in Words:</b> {amount_in_words_str}", style_text))
     story.append(Spacer(1, 10))
 
     # ========================================================================

@@ -229,7 +229,21 @@
     .container-table {
       width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
       margin-bottom: 16px;
+    }
+    .container-table thead th:nth-child(1),
+    .container-table tbody td:nth-child(1) {
+      width: 50%;
+    }
+    .container-table thead th:nth-child(2),
+    .container-table tbody td:nth-child(2) {
+      width: 50%;
+    }
+    .container-table th,
+    .container-table td {
+      box-sizing: border-box;
+      word-wrap: break-word;
     }
 
     .container-table-wrapper {
@@ -238,6 +252,7 @@
       border-radius: 12px;
       padding: 20px;
       margin-bottom: 24px;
+      width: 100%;
     }
 
     .container-header-row {
@@ -257,6 +272,8 @@
       padding: 12px;
       background: white;
       border: 1px solid #e2e8f0;
+      vertical-align: middle;
+      overflow: hidden;
     }
 
     .container-number-badge {
@@ -272,6 +289,11 @@
       font-size: 14px;
     }
 
+    .container-actions-header {
+      display: flex;
+      gap: 8px;
+    }
+
     .container-actions {
       display: flex;
       align-items: center;
@@ -283,10 +305,20 @@
 
     .items-section {
       margin-top: 20px;
-      padding: 16px;
-      background: white;
-      border: 2px solid #e2e8f0;
-      border-radius: 8px;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .items-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+    }
+
+    .items-table-wrapper .items-table {
+      width: 100%;
     }
 
     .items-section-header {
@@ -302,6 +334,7 @@
     .items-table {
       width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
       font-size: 13px;
     }
 
@@ -323,11 +356,16 @@
       padding: 8px;
       border: 1px solid #e2e8f0;
       background: white;
+      vertical-align: middle;
+      overflow: hidden;
     }
 
     .items-table input,
-    .items-table textarea {
+    .items-table textarea,
+    .items-table select {
       width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       padding: 6px 8px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
@@ -335,7 +373,8 @@
     }
 
     .items-table input:focus,
-    .items-table textarea:focus {
+    .items-table textarea:focus,
+    .items-table select:focus {
       outline: none;
       border-color: #3b82f6;
     }
@@ -352,6 +391,8 @@
 
     .table-input {
       width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       padding: 8px 10px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
@@ -451,6 +492,10 @@
             <label class="form-label">Packing List Date</label>
             <input id="date" type="date" class="form-input">
         </div>
+        <div class="form-field">
+            <label class="form-label">Invoice Number</label>
+            <input id="invoice_number" type="text" class="form-input" placeholder="Enter Invoice Number">
+        </div>
         <div class="form-field full-width">
             <label class="form-label">Notify Party</label>
             <textarea id="notify_party" class="form-textarea" placeholder="Enter Notify Party details"></textarea>
@@ -508,6 +553,95 @@
 
     <div class="form-section">
       <div class="section-header">
+        <!-- Shipping & Logistics -->
+        <h3 class="section-title">Shipping & Logistics</h3>
+      </div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">Pre-carriage by</label>
+          <select id="pre_carriage" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Place of Receipt</label>
+          <select id="place_of_receipt" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Place of Receipt by Pre-Carrier</label>
+          <select id="place_of_receipt_by_pre_carrier" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Vessel / Flight No.</label>
+          <input id="vessel_flight_no" type="text" class="form-input" placeholder="e.g., Vessel ABC / Flight XY123">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Port of Loading</label>
+          <select id="port_loading" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Port of Discharge</label>
+          <select id="port_discharge" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Final Destination</label>
+          <select id="final_destination" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h3 class="section-title">Payment & Terms</h3>
+      </div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">Incoterms</label>
+          <select id="incoterm" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Payment Terms</label>
+          <select id="payment_term" class="form-select">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h3 class="section-title">Countries</h3>
+      </div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">Country of Origin of Goods</label>
+          <select id="origin_country" class="form-select">
+            <option value="">-- Select Country --</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Country of Final Destination</label>
+          <select id="final_dest_country" class="form-select">
+            <option value="">-- Select Country --</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
         <h3 class="section-title">Containers & Items</h3>
       </div>
 
@@ -543,7 +677,10 @@
           <span class="container-number-badge"></span>
           <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: #1e40af;">Container</h4>
         </div>
-        <button type="button" class="btn btn-danger remove-container">Remove Container</button>
+        <div class="container-actions-header">
+            <button type="button" class="btn btn-secondary copy-container">Copy Container</button>
+            <button type="button" class="btn btn-danger remove-container">Remove Container</button>
+        </div>
       </div>
 
       <table class="container-table">
@@ -565,6 +702,29 @@
         </tbody>
       </table>
 
+      <table class="container-table">
+        <thead class="container-header-row">
+          <tr>
+            <th style="width: 33%;">Net Weight</th>
+            <th style="width: 33%;">Tare Weight</th>
+            <th style="width: 34%;">Gross Weight (auto)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="container-data-row">
+            <td>
+              <input type="number" class="table-input net-weight" placeholder="0.000" step="0.001">
+            </td>
+            <td>
+              <input type="number" class="table-input tare-weight" placeholder="0.000" step="0.001">
+            </td>
+            <td>
+              <input type="number" class="table-input gross-weight" placeholder="0.000" step="0.001" disabled>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
       <div class="items-section">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
           <div class="items-section-header">
@@ -573,21 +733,18 @@
           <button type="button" class="btn btn-secondary add-item" style="padding: 6px 14px; font-size: 12px;">+ Add Item</button>
         </div>
 
-        <div style="overflow-x: auto;">
+        <div class="items-table-wrapper">
           <table class="items-table">
             <thead>
               <tr>
                 <th style="width: 40px;">#</th>
                 <th style="width: 90px;">HSN Code</th>
                 <th style="width: 90px;">Item Code</th>
-                <th style="width: 100px;">Packages</th>
+                <th style="width: 100px;">No & Kind of Packages</th>
                 <th style="width: 250px;">Description</th>
                 <th style="width: 70px;">Quantity</th>
                 <th style="width: 60px;">UOM</th>
                 <th style="width: 100px;">Batch</th>
-                <th style="width: 80px;">Net Wt</th>
-                <th style="width: 80px;">Tare Wt</th>
-                <th style="width: 80px;">Gross Wt</th>
                 <th style="width: 60px;">Action</th>
               </tr>
             </thead>
@@ -621,19 +778,12 @@
         <input type="number" class="quantity" placeholder="Qty" step="0.01">
       </td>
       <td>
-        <input type="text" class="uom" placeholder="Unit">
+        <select class="uom">
+          <option value="">-- Select UOM --</option>
+        </select>
       </td>
       <td>
         <input type="text" class="batch-details" placeholder="Batch">
-      </td>
-      <td>
-        <input type="number" class="net-weight" placeholder="Net" step="0.01">
-      </td>
-      <td>
-        <input type="number" class="tare-weight" placeholder="Tare" step="0.01">
-      </td>
-      <td>
-        <input type="number" class="gross-weight" placeholder="Gross" disabled>
       </td>
       <td style="text-align: center;">
         <button type="button" class="btn btn-danger remove-item" style="padding: 4px 8px; font-size: 11px;">✕</button>
@@ -650,6 +800,7 @@
       const headerTitle = document.querySelector(".create-header-content h2");
       const headerDesc = document.querySelector(".create-header-description");
       const btnCreate = document.getElementById("btnCreate");
+      let UOM_OPTIONS = [];
 
       const params = new URLSearchParams(window.location.search);
       const EDIT_ID = params.get("id");
@@ -669,6 +820,29 @@
         });
       }
 
+      function populateUOMSelect(selectEl, selectedVal = "") {
+        const placeholder = '<option value="">-- Select UOM --</option>';
+        const options = (UOM_OPTIONS || []).map(u => `<option value="${u.id}">${u.uom}</option>`).join('');
+        selectEl.innerHTML = placeholder + options;
+        if (selectedVal) {
+          selectEl.value = String(selectedVal);
+        }
+      }
+
+      function refreshAllUOMSelects() {
+        document.querySelectorAll("select.uom").forEach(sel => populateUOMSelect(sel, sel.value || ""));
+      }
+
+      function computeGrossFor(wrapper) {
+        const netInput = wrapper.querySelector(".net-weight");
+        const tareInput = wrapper.querySelector(".tare-weight");
+        const grossInput = wrapper.querySelector(".gross-weight");
+        const net = parseFloat(netInput && netInput.value) || 0;
+        const tare = parseFloat(tareInput && tareInput.value) || 0;
+        const gross = net + tare;
+        if (grossInput) grossInput.value = gross.toFixed(3);
+      }
+
       function createItem(tbody, itemData = null) {
         const itemNode = itemTemplate.content.cloneNode(true);
         const row = itemNode.querySelector(".item-row");
@@ -680,55 +854,83 @@
           row.querySelector(".packages-number-and-kind").value = itemData.packages_number_and_kind ?? "";
           row.querySelector(".description-of-goods").value = itemData.description_of_goods ?? "";
           row.querySelector(".quantity").value = itemData.quantity ?? "";
-          row.querySelector(".uom").value = itemData.uom ?? "";
           row.querySelector(".batch-details").value = itemData.batch_details ?? "";
-          row.querySelector(".net-weight").value = itemData.net_weight ?? "";
-          row.querySelector(".tare-weight").value = itemData.tare_weight ?? "";
-          const grossWeightInput = row.querySelector(".gross-weight");
-          if (grossWeightInput) {
-            const gross = (itemData.gross_weight ?? (parseFloat(itemData.net_weight || 0) + parseFloat(itemData.tare_weight || 0)));
-            grossWeightInput.value = (parseFloat(gross) || 0).toFixed(2);
-          }
         }
+
+        const uomSel = row.querySelector(".uom");
+        populateUOMSelect(uomSel, itemData ? (itemData.uom ?? "") : "");
 
         tbody.appendChild(itemNode);
         updateItemNumbers(tbody);
       }
 
-      function createContainer(containerData = null) {
+      function createContainer(containerData = null, insertAfterNode = null) {
         const containerNode = containerTemplate.content.cloneNode(true);
         const wrapper = containerNode.querySelector(".container-table-wrapper");
 
         if (containerData) {
-          wrapper.setAttribute("data-container-id", containerData.id ?? "");
-          wrapper.querySelector(".container-reference").value = containerData.container_reference ?? "";
-          wrapper.querySelector(".marks-and-numbers").value = containerData.marks_and_numbers ?? "";
-          const tbody = wrapper.querySelector(".items-tbody");
-          (containerData.items || []).forEach(item => createItem(tbody, item));
+            wrapper.setAttribute("data-container-id", containerData.id ?? "");
+            wrapper.querySelector(".container-reference").value = containerData.container_reference ?? "";
+            wrapper.querySelector(".marks-and-numbers").value = containerData.marks_and_numbers ?? "";
+            // Initialize weights if available and compute gross
+            const netInput = wrapper.querySelector(".net-weight");
+            const tareInput = wrapper.querySelector(".tare-weight");
+            if (netInput) netInput.value = (containerData.net_weight ?? "");
+            if (tareInput) tareInput.value = (containerData.tare_weight ?? "");
+            computeGrossFor(wrapper);
+            const tbody = wrapper.querySelector(".items-tbody");
+            (containerData.items || []).forEach(item => createItem(tbody, item));
         }
 
-        containersWrapper.appendChild(containerNode);
+        if (insertAfterNode) {
+            insertAfterNode.parentNode.insertBefore(wrapper, insertAfterNode.nextSibling);
+        } else {
+            containersWrapper.appendChild(containerNode);
+        }
+        // Auto-calc gross weight when net/tare change
+        const netInput2 = wrapper.querySelector(".net-weight");
+        const tareInput2 = wrapper.querySelector(".tare-weight");
+        if (netInput2) netInput2.addEventListener("input", () => computeGrossFor(wrapper));
+        if (tareInput2) tareInput2.addEventListener("input", () => computeGrossFor(wrapper));
         updateContainerNumbers();
+        return wrapper;
       }
 
       function addContainer() {
         createContainer(null);
       }
 
+      function copyContainer(sourceContainerWrapper) {
+          const containerData = {
+              container_reference: "",
+              marks_and_numbers: "",
+              items: []
+          };
+
+          sourceContainerWrapper.querySelectorAll(".item-row").forEach(itemRow => {
+              const itemData = {
+                  hsn_code: itemRow.querySelector(".hsn-code").value,
+                  item_code: itemRow.querySelector(".item-code").value,
+                  packages_number_and_kind: itemRow.querySelector(".packages-number-and-kind").value,
+                  description_of_goods: itemRow.querySelector(".description-of-goods").value,
+                  quantity: itemRow.querySelector(".quantity").value,
+                  uom: itemRow.querySelector(".uom").value,
+                  batch_details: itemRow.querySelector(".batch-details").value,
+              };
+              containerData.items.push(itemData);
+          });
+
+          const newContainer = createContainer(containerData, sourceContainerWrapper);
+          const refInput = newContainer.querySelector(".container-reference");
+          if (refInput) {
+              refInput.focus();
+          }
+      }
+
       function addItem(tbody) {
         createItem(tbody, null);
       }
 
-      function calculateGrossWeight(row) {
-        const netWeightInput = row.querySelector(".net-weight");
-        const tareWeightInput = row.querySelector(".tare-weight");
-        const grossWeightInput = row.querySelector(".gross-weight");
-
-        const netWeight = parseFloat(netWeightInput.value) || 0;
-        const tareWeight = parseFloat(tareWeightInput.value) || 0;
-
-        grossWeightInput.value = (netWeight + tareWeight).toFixed(2);
-      }
 
       function formatErrors(err, prefix = "") {
         if (err == null) return "";
@@ -759,6 +961,9 @@
             e.target.closest(".container-table-wrapper").remove();
             updateContainerNumbers();
           }
+        } else if (e.target.classList.contains("copy-container")) {
+            const containerWrapper = e.target.closest(".container-table-wrapper");
+            copyContainer(containerWrapper);
         } else if (e.target.classList.contains("add-item")) {
           const tbody = e.target.closest(".container-table-wrapper").querySelector(".items-tbody");
           addItem(tbody);
@@ -772,20 +977,14 @@
         }
       });
 
-      containersWrapper.addEventListener("input", function (e) {
-        if (e.target.classList.contains("net-weight") || e.target.classList.contains("tare-weight")) {
-          const row = e.target.closest(".item-row");
-          calculateGrossWeight(row);
-        }
-      });
 
       function buildPayload() {
         const payload = {
           exporter: document.getElementById("exporter").value,
           consignee: document.getElementById("consignee").value,
           buyer: document.getElementById("buyer").value || null,
-          date: document.getElementById("date").value,
           notify_party: document.getElementById("notify_party").value,
+          invoice_number: document.getElementById("invoice_number").value,
           po_number: document.getElementById("po_number").value,
           po_date: document.getElementById("po_date").value || null,
           lc_number: document.getElementById("lc_number").value,
@@ -796,13 +995,31 @@
           so_date: document.getElementById("so_date").value || null,
           other_ref: document.getElementById("other_ref").value,
           other_ref_date: document.getElementById("other_ref_date").value || null,
+          // Shipping & Logistics
+          pre_carriage: document.getElementById("pre_carriage").value || null,
+          place_of_receipt: document.getElementById("place_of_receipt").value || null,
+          place_of_receipt_by_pre_carrier: document.getElementById("place_of_receipt_by_pre_carrier").value || null,
+          vessel_flight_no: document.getElementById("vessel_flight_no").value || "",
+          port_loading: document.getElementById("port_loading").value || null,
+          port_discharge: document.getElementById("port_discharge").value || null,
+          final_destination: document.getElementById("final_destination").value || null,
+          // Commercial terms
+          payment_term: document.getElementById("payment_term").value || null,
+          incoterm: document.getElementById("incoterm").value || null,
+          // Countries
+          origin_country: document.getElementById("origin_country").value || null,
+          final_destination_country: document.getElementById("final_dest_country").value || null,
           containers: []
         };
+        const dateVal = document.getElementById("date").value;
+        if (dateVal) { payload.date = dateVal; }
 
         document.querySelectorAll(".container-table-wrapper").forEach(containerWrapper => {
           const containerData = {
             container_reference: containerWrapper.querySelector(".container-reference").value,
             marks_and_numbers: containerWrapper.querySelector(".marks-and-numbers").value,
+            net_weight: containerWrapper.querySelector(".net-weight") ? containerWrapper.querySelector(".net-weight").value : "",
+            tare_weight: containerWrapper.querySelector(".tare-weight") ? containerWrapper.querySelector(".tare-weight").value : "",
             items: []
           };
           const containerId = containerWrapper.getAttribute("data-container-id");
@@ -816,9 +1033,7 @@
               description_of_goods: itemRow.querySelector(".description-of-goods").value,
               quantity: itemRow.querySelector(".quantity").value,
               uom: itemRow.querySelector(".uom").value,
-              batch_details: itemRow.querySelector(".batch-details").value,
-              net_weight: itemRow.querySelector(".net-weight").value,
-              tare_weight: itemRow.querySelector(".tare-weight").value
+              batch_details: itemRow.querySelector(".batch-details").value
             };
             const itemId = itemRow.getAttribute("data-item-id");
             if (itemId) itemData.id = parseInt(itemId, 10);
@@ -833,6 +1048,33 @@
 
       btnCreate.addEventListener("click", function() {
         const payload = buildPayload();
+
+        // Client-side validation to surface clear messages before hitting API
+        const errors = [];
+        if (!payload.exporter) errors.push("Exporter is required");
+        if (!payload.consignee) errors.push("Consignee is required");
+        if (!payload.containers.length) errors.push("Add at least one container");
+
+        payload.containers.forEach((c, ci) => {
+          const containerIdx = ci + 1;
+          if (!c.items.length) errors.push(`Container ${containerIdx}: add at least one item`);
+          // Validate container weights
+          if (c.net_weight === "" || isNaN(Number(c.net_weight))) errors.push(`Container ${containerIdx}: Net Weight must be a number`);
+          if (c.tare_weight === "" || isNaN(Number(c.tare_weight))) errors.push(`Container ${containerIdx}: Tare Weight must be a number`);
+          c.items.forEach((it, ii) => {
+            const itemIdx = ii + 1;
+            if (!it.packages_number_and_kind) errors.push(`Container ${containerIdx} Item ${itemIdx}: No & Kind of Packages is required`);
+            if (!it.description_of_goods) errors.push(`Container ${containerIdx} Item ${itemIdx}: Description of Goods is required`);
+            const q = it.quantity;
+            if (q === "" || q === null || isNaN(Number(q))) errors.push(`Container ${containerIdx} Item ${itemIdx}: Quantity must be a number`);
+          });
+        });
+
+        if (errors.length) {
+          alert("Please fix the following before submitting:\n" + errors.join("\n"));
+          return;
+        }
+
         const url = isEdit ? `/api/master/packing-lists/${EDIT_ID}/` : `/api/master/packing-lists/`;
         const method = isEdit ? "PUT" : "POST";
 
@@ -846,16 +1088,27 @@
         })
         .then(response => {
           if (!response.ok) {
-            return response.json().then(err => { throw err; });
+            // Fallback to text when JSON error body is not available
+            return response.text().then(txt => {
+              try {
+                const err = JSON.parse(txt);
+                throw err;
+              } catch (_) {
+                throw txt || `HTTP ${response.status}`;
+              }
+            });
           }
           return response.json();
         })
         .then(data => {
+          console.log("Packing List created response:", data);
+          const num = data && data.number ? String(data.number) : "";
+          alert(`Packing List created${num ? " - " + num : ""}.`);
           window.location.href = `/app/packing-list/`;
         })
         .catch(error => {
           console.error(isEdit ? "Error updating packing list:" : "Error creating packing list:", error);
-          const errorMessage = formatErrors(error) || "An unexpected error occurred.";
+          const errorMessage = typeof error === "string" ? error : (formatErrors(error) || "An unexpected error occurred.");
           alert(`Error:\n${errorMessage}`);
         });
       });
@@ -878,6 +1131,57 @@
         }
         return cookieValue;
       }
+  
+      // Load master data for dropdowns (uses existing API endpoints)
+      async function loadMasters() {
+        async function fetchJSON(url) {
+          const resp = await fetch(url, {
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" }
+          });
+          return resp.json();
+        }
+        try {
+          const [
+            preCarriage, placeOfReceipt, portsLoading, portsDischarge,
+            finalDestinations, paymentTerms, incoterms, uoms, countries
+          ] = await Promise.all([
+            fetchJSON("/api/master/pre-carriage/"),
+            fetchJSON("/api/master/place-of-receipt/"),
+            fetchJSON("/api/master/ports-loading/"),
+            fetchJSON("/api/master/ports-discharge/"),
+            fetchJSON("/api/master/final-destinations/"),
+            fetchJSON("/api/master/payment-terms/"),
+            fetchJSON("/api/master/incoterms/"),
+            fetchJSON("/api/master/uom/"),
+            fetchJSON("/api/master/countries/"),
+          ]);
+          const fillSelect = (id, data, labelFn) => {
+            const items = (data && Array.isArray(data.results)) ? data.results : data;
+            const el = document.getElementById(id);
+            if (!el) return;
+            const placeholder = el.querySelector('option[value=""]');
+            const placeholderText = placeholder ? placeholder.textContent : '-- Select --';
+            el.innerHTML = `<option value="">${placeholderText}</option>` + (items || []).map(x => `<option value="${x.id}">${labelFn(x)}</option>`).join('');
+          };
+          fillSelect("pre_carriage", preCarriage, x => x.name);
+          fillSelect("place_of_receipt", placeOfReceipt, x => x.name);
+          fillSelect("place_of_receipt_by_pre_carrier", placeOfReceipt, x => x.name);
+          fillSelect("port_loading", portsLoading, x => x.name + " - " + (x.country || ""));
+          fillSelect("port_discharge", portsDischarge, x => x.name + " - " + (x.country || ""));
+          fillSelect("final_destination", finalDestinations, x => x.name + " - " + (x.country || ""));
+          fillSelect("payment_term", paymentTerms, x => x.name);
+          fillSelect("incoterm", incoterms, x => x.code + (x.description ? (" - " + x.description) : ""));
+          fillSelect("origin_country", countries, x => x.name + " (" + x.iso_code + ")");
+          fillSelect("final_dest_country", countries, x => x.name + " (" + x.iso_code + ")");
+          const uomItems = (uoms && Array.isArray(uoms.results)) ? uoms.results : uoms;
+          UOM_OPTIONS = (uomItems || []).map(x => ({ id: x.id, uom: x.uom, rate_per_uom: x.rate_per_uom }));
+          refreshAllUOMSelects();
+        } catch (err) {
+          console.error("Failed to load master data:", err);
+        }
+      }
+      loadMasters();
 
       if (isEdit) {
         if (headerTitle) headerTitle.textContent = "Edit Packing List";
@@ -902,6 +1206,7 @@
           document.getElementById("consignee").value = String(data.consignee || "");
           document.getElementById("buyer").value = data.buyer ? String(data.buyer) : "";
           document.getElementById("date").value = data.date || "";
+          document.getElementById("invoice_number").value = data.invoice_number || "";
           document.getElementById("notify_party").value = data.notify_party || "";
           document.getElementById("po_number").value = data.po_number || "";
           document.getElementById("po_date").value = data.po_date || "";
@@ -913,6 +1218,20 @@
           document.getElementById("so_date").value = data.so_date || "";
           document.getElementById("other_ref").value = data.other_ref || "";
           document.getElementById("other_ref_date").value = data.other_ref_date || "";
+          // Shipping & Logistics
+          document.getElementById("pre_carriage").value = data.pre_carriage ? String(data.pre_carriage) : "";
+          document.getElementById("place_of_receipt").value = data.place_of_receipt ? String(data.place_of_receipt) : "";
+          document.getElementById("place_of_receipt_by_pre_carrier").value = data.place_of_receipt_by_pre_carrier ? String(data.place_of_receipt_by_pre_carrier) : "";
+          document.getElementById("vessel_flight_no").value = data.vessel_flight_no || "";
+          document.getElementById("port_loading").value = data.port_loading ? String(data.port_loading) : "";
+          document.getElementById("port_discharge").value = data.port_discharge ? String(data.port_discharge) : "";
+          document.getElementById("final_destination").value = data.final_destination ? String(data.final_destination) : "";
+          // Commercial terms
+          document.getElementById("payment_term").value = data.payment_term ? String(data.payment_term) : "";
+          document.getElementById("incoterm").value = data.incoterm ? String(data.incoterm) : "";
+          // Countries
+          document.getElementById("origin_country").value = data.origin_country ? String(data.origin_country) : "";
+          document.getElementById("final_dest_country").value = data.final_destination_country ? String(data.final_destination_country) : "";
 
           containersWrapper.innerHTML = "";
           (data.containers || []).forEach(container => createContainer(container));

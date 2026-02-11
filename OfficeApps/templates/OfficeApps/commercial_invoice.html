@@ -3,35 +3,36 @@
 {% block content %}
   <div class="page-header" style="display:flex; align-items:center; justify-content:space-between;">
     <div>
-      <h2>Packing List</h2>
-      <p class="muted">Search, paginate, and control Packing Lists.</p>
+      <h2>Commercial Invoice</h2>
+      <p class="muted">Search, paginate, and control Commercial Invoices.</p>
     </div>
-    {% if can_create %}
-    <button id="btnCreate" class="btn" style="background:#16a34a; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">
-      + Create Packing List
-    </button>
-    {% endif %}
+    <div style="display:flex; gap:8px; align-items:center;">
+      <a href="/app/commercial-invoice/create/" class="btn" style="background:#16a34a; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; text-decoration:none;">
+        + Add Commercial Invoice
+      </a>
+    </div>
   </div>
 
   <div class="card">
     <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
-      <input id="searchInput" type="text" placeholder="Search by number, PI number, consignee..." style="flex:1; padding:8px; border:1px solid #e5e7eb; border-radius:8px;">
+      <input id="searchInput" type="text" placeholder="Search by number, consignee, exporter..." style="flex:1; padding:8px; border:1px solid #e5e7eb; border-radius:8px;">
       <button id="btnSearch" class="btn" style="background:#3b82f6; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">Search</button>
       <button id="btnClear" class="btn" style="background:#64748b; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">Clear</button>
     </div>
 
     <div style="overflow:auto;">
-      <table id="packingTable" style="width:100%; border-collapse:collapse;">
+      <table id="invoiceTable" style="width:100%; border-collapse:collapse;">
         <thead>
           <tr style="text-align:left; border-bottom:1px solid #e5e7eb;">
-            <th style="padding:8px;">Packing List No</th>
-            <th style="padding:8px;">Packing List Date</th>
+            <th style="padding:8px;">Date of Creation</th>
             <th style="padding:8px;">Consignee</th>
+            <th style="padding:8px; text-align:right;">Amount</th>
+            <th style="padding:8px; text-align:right;">Total Amount (USD)</th>
             <th style="padding:8px;">Status</th>
             <th style="padding:8px;">Actions</th>
           </tr>
         </thead>
-        <tbody id="packingTbody">
+        <tbody id="invoiceTbody">
           <!-- Rows injected by JS -->
         </tbody>
       </table>
@@ -54,7 +55,7 @@
   </div>
 
   <script>
-    // Role flags sourced from hidden DOM dataset
+    // Role flags
     const flagsEl = document.getElementById("roleFlags");
     const ROLE = {
       admin: flagsEl ? flagsEl.dataset.admin === "true" : false,
@@ -63,7 +64,7 @@
       canCreate: flagsEl ? flagsEl.dataset.canCreate === "true" : false
     };
 
-    const API_BASE = "/api/master/packing-lists/";
+    const API_BASE = "/api/master/commercial-invoices/";
 
     function getCsrfToken() {
       const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
@@ -83,38 +84,63 @@
         "DRAFT": "#64748b",
         "PENDING_APPROVAL": "#f59e0b",
         "APPROVED": "#16a34a",
-        "REWORK": "#ef4444",
-        "PERMANENTLY_REJECTED": "#ef4444",
+        "REJECTED": "#ef4444",
+        "DISABLED": "#0f172a",
       };
       const bg = colors[status] || "#64748b";
-      const text = (status || "").replace("_"," ");
-      return '<span style="display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; color:#fff; background:'+bg+';">'+text+'</span>';
+      const label = status.replace("_"," ");
+      return '<span style="display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; color:#fff; background:'+bg+';">'+label+'</span>';
+    }
+
+    function currencyUSD(v) {
+      try {
+        return Number(v).toLocaleString(undefined, { style: "currency", currency: "USD" });
+      } catch(e) { return v; }
+    }
+
+    function currencyGeneric(v) {
+      try {
+        return Number(v).toLocaleString();
+      } catch(e) { return v; }
     }
 
     function getAllowedActions(row) {
       const s = row.status;
       const actions = [];
-      const submitAction = { key: "submit", label: s === "REWORK" ? "Re-submit for Approval" : "Submit for Approval", handler: () => submitPackingList(row.id) };
-      const approveAction = { key: "approve", label: "Approve", handler: () => approvePackingList(row.id) };
-      const rejectAction = { key: "reject", label: "Reject", handler: () => rejectPackingList(row.id) };
-      const permRejectAction = { key: "permanently_reject", label: "Permanently Reject", handler: () => permanentlyRejectPackingList(row.id) };
-      const deleteAction = { key: "delete", label: "Delete", handler: () => deactivatePackingList(row.id) };
-      const pdfAction = { key: "pdf", label: "Download PDF", handler: () => pdfPackingList(row.id, row.number) };
+      const submitAction = { key: "submit", label: s === "REJECTED" ? "Re-submit for Approval" : "Submit for Approval", handler: () => submitInvoice(row.id) };
+      const approveAction = { key: "approve", label: "Approve", handler: () => approveInvoice(row.id) };
+      const rejectAction = { key: "reject", label: "Reject (with comments)", handler: () => rejectInvoice(row.id) };
+      const disableAction = { key: "disable", label: "Disable", handler: () => disableInvoice(row.id) };
+      const pdfDraftAction = { key: "pdf_draft", label: "Download Draft PDF", handler: () => pdfInvoiceDraft(row.id) };
+      const pdfAction = { key: "pdf", label: "Download Final PDF", handler: () => pdfInvoice(row.id) };
+      const viewCommentsAction = { key: "view_comments", label: "View Rejection Comments", handler: () => viewRejectionComments(row.id) };
 
       if (ROLE.admin) {
-        actions.push(submitAction, approveAction, rejectAction, permRejectAction, deleteAction, pdfAction);
+        // Admin: full control
+        if (s !== "APPROVED" && s !== "DISABLED") actions.push(submitAction);
+        if (s === "PENDING_APPROVAL" || s === "REJECTED") actions.push(approveAction);
+        if (s === "PENDING_APPROVAL") actions.push(rejectAction);
+        if (s === "APPROVED") actions.push(disableAction);
+        if (s !== "APPROVED") actions.push(pdfDraftAction);
+        if (s === "APPROVED") actions.push(pdfAction);
+        if (s === "REJECTED") actions.push(viewCommentsAction);
         return actions;
       }
 
       if (ROLE.maker) {
-        if (s === "DRAFT") actions.push(submitAction, deleteAction);
-        if (s === "REWORK") actions.push(submitAction);
+        // Maker: create handled via other flow; can submit, view draft until approval; final PDF after approval
+        if (s === "DRAFT" || s === "REJECTED") actions.push(submitAction);
+        if (s !== "APPROVED" && s !== "DISABLED") actions.push(pdfDraftAction);
         if (s === "APPROVED") actions.push(pdfAction);
+        if (s === "REJECTED") actions.push(viewCommentsAction);
       }
 
       if (ROLE.checker) {
-        if (s === "PENDING_APPROVAL") actions.push(approveAction, rejectAction);
-        if (s === "APPROVED") actions.push(pdfAction);
+        // Checker: approve/reject; disable approved
+        if (s === "PENDING_APPROVAL" || s === "REJECTED") actions.push(approveAction);
+        if (s === "PENDING_APPROVAL") actions.push(rejectAction);
+        if (s === "APPROVED") actions.push(disableAction, pdfAction);
+        if (s === "REJECTED") actions.push(viewCommentsAction);
       }
 
       return actions;
@@ -127,24 +153,29 @@
       if (actions.length) {
         actionsHtml = '<div style="position:relative; display:inline-block;">' +
           '<button class="btn" id="'+actionBtnId+'" style="background:#3b82f6; color:#fff; border:none; border-radius:8px; padding:4px 8px; cursor:pointer;">Actions ▾</button>' +
-          '<div class="dropdown" style="display:none; position:absolute; background:#fff; border:1px solid #e5e7eb; box-shadow:0 4px 16px rgba(0,0,0,0.1); border-radius:8px; min-width:180px; z-index:10;">' +
+          '<div class="dropdown" style="display:none; position:absolute; background:#fff; border:1px solid #e5e7eb; box-shadow:0 4px 16px rgba(0,0,0,0.1); border-radius:8px; min-width:200px; z-index:10;">' +
             actions.map(a => '<a href="#" data-key="'+a.key+'" style="display:block; padding:8px 10px; color:#0f172a; text-decoration:none;">'+a.label+'</a>').join('') +
           '</div>' +
         '</div>';
       }
-      const date = row.date || "";
+
+      const createdAt = row.created_at || row.date || "";
       const consignee = row.consignee_name || "";
-      const status = statusBadge(row.status);
-      const canEditRow = (ROLE.admin) || (ROLE.maker && (row.status === "DRAFT" || row.status === "REWORK")) || (ROLE.checker && row.status === "REWORK");
-      const numberCell = canEditRow && row.id
-        ? '<a href="/app/packing-list/create/?id='+row.id+'" style="color:#2563eb; text-decoration:underline;">'+(row.number || "")+'</a>'
-        : (row.number || "");
+      const amount = currencyGeneric(row.amount || 0);
+      const totalUsd = currencyUSD(row.total_amount_usd || 0);
+      let statusCell = statusBadge(row.status);
+
+      // Rework indicator (if REJECTED)
+      if (row.status === "REJECTED") {
+        statusCell += ' <span title="Rework required" style="display:inline-block; padding:2px 6px; border-radius:999px; font-size:11px; color:#fff; background:#ef4444;">Rework Required</span>';
+      }
 
       return '<tr data-id="'+row.id+'" style="border-bottom:1px solid #e5e7eb;">' +
-        '<td style="padding:8px;">'+numberCell+'</td>' +
-        '<td style="padding:8px;">'+date+'</td>' +
+        '<td style="padding:8px;">'+createdAt+'</td>' +
         '<td style="padding:8px;">'+consignee+'</td>' +
-        '<td style="padding:8px;">'+status+'</td>' +
+        '<td style="padding:8px; text-align:right;">'+amount+'</td>' +
+        '<td style="padding:8px; text-align:right;">'+totalUsd+'</td>' +
+        '<td style="padding:8px;">'+statusCell+'</td>' +
         '<td style="padding:8px;">'+actionsHtml+'</td>' +
       '</tr>';
     }
@@ -168,7 +199,6 @@
           dropdownWrap.style.display = "none";
           if (found) found.handler();
         });
-        // Hide dropdown when clicking outside
         document.addEventListener("click", (ev) => {
           if (!dropdownWrap.contains(ev.target) && ev.target !== actionsBtn) {
             dropdownWrap.style.display = "none";
@@ -197,11 +227,11 @@
         : resp.blob();
     }
 
-    async function loadPackingLists() {
-      const url = API_BASE + "?page=" + state.page + (state.search ? ("&search=" + encodeURIComponent(state.search)) : "");
+    async function loadInvoices() {
+      const url = API_BASE + "?page=" + state.page + (state.search ? ("&search=" + encodeURIComponent(state.search)) : "") + "&ordering=-date";
       try {
         const data = await fetchJSON(url);
-        const tbody = document.getElementById("packingTbody");
+        const tbody = document.getElementById("invoiceTbody");
         tbody.innerHTML = "";
         (data.results || []).forEach(row => {
           const html = rowHtml(row);
@@ -217,25 +247,25 @@
         const pageInfo = document.getElementById("pageInfo");
         pageInfo.textContent = "Page " + state.page + (state.count ? (" • " + state.count + " records") : "");
       } catch (e) {
-        alert("Failed to load packing lists: " + e.message);
+        alert("Failed to load invoices: " + e.message);
       }
     }
 
-    async function submitPackingList(id) {
+    async function submitInvoice(id) {
       try {
         await fetchJSON(API_BASE + id + "/submit/", { method: "POST", body: "{}" });
-        await loadPackingLists();
+        await loadInvoices();
       } catch(e) { alert("Submit failed: " + e.message); }
     }
 
-    async function approvePackingList(id) {
+    async function approveInvoice(id) {
       try {
         await fetchJSON(API_BASE + id + "/approve/", { method: "POST", body: "{}" });
-        await loadPackingLists();
+        await loadInvoices();
       } catch(e) { alert("Approve failed: " + e.message); }
     }
 
-    async function rejectPackingList(id) {
+    async function rejectInvoice(id) {
       const reason = prompt("Enter rejection comments (required):", "");
       if (!reason || !reason.trim()) {
         alert("Rejection requires comments.");
@@ -244,27 +274,40 @@
       const payload = JSON.stringify({ notes: reason.trim() });
       try {
         await fetchJSON(API_BASE + id + "/reject/", { method: "POST", body: payload });
-        await loadPackingLists();
+        await loadInvoices();
       } catch(e) { alert("Reject failed: " + e.message); }
     }
 
-    async function permanentlyRejectPackingList(id) {
-      if (!confirm("Permanently reject this packing list? This cannot be reversed.")) return;
+    async function disableInvoice(id) {
+      if (!confirm("Disable this Approved invoice? This is a terminal status.")) return;
       try {
-        await fetchJSON(API_BASE + id + "/permanently_reject/", { method: "POST", body: "{}" });
-        await loadPackingLists();
-      } catch(e) { alert("Permanent reject failed: " + e.message); }
+        await fetchJSON(API_BASE + id + "/disable/", { method: "POST", body: "{}" });
+        await loadInvoices();
+      } catch(e) { alert("Disable failed: " + e.message); }
     }
 
-    async function deactivatePackingList(id) {
-      if (!confirm("Delete (deactivate) this Draft packing list?")) return;
+    async function pdfInvoiceDraft(id) {
       try {
-        await fetchJSON(API_BASE + id + "/deactivate/", { method: "POST", body: "{}" });
-        await loadPackingLists();
-      } catch(e) { alert("Delete failed: " + e.message); }
+        const resp = await fetch(API_BASE + id + "/pdf_draft/", { method: "GET", credentials: "same-origin" });
+        if (!resp.ok) {
+          let msg = "Draft PDF failed";
+          try { const err = await resp.json(); msg = err.detail || JSON.stringify(err); } catch(e){}
+          alert(msg);
+          return;
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "CommercialInvoice_" + id + "_DRAFT.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch(e) { alert("Draft PDF failed: " + e.message); }
     }
 
-    async function pdfPackingList(id, number) {
+    async function pdfInvoice(id) {
       try {
         const resp = await fetch(API_BASE + id + "/pdf/", { method: "GET", credentials: "same-origin" });
         if (!resp.ok) {
@@ -274,18 +317,10 @@
           return;
         }
         const blob = await resp.blob();
-        const dispo = resp.headers.get("Content-Disposition") || resp.headers.get("content-disposition") || "";
-        let filename = "";
-        const m = /filename="?([^"]+)"?/i.exec(dispo);
-        if (m && m[1]) {
-          filename = m[1];
-        } else {
-          filename = "PL_" + (number || id) + ".pdf";
-        }
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = filename;
+        a.download = "CommercialInvoice_" + id + ".pdf";
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -293,35 +328,40 @@
       } catch(e) { alert("PDF failed: " + e.message); }
     }
 
+    async function viewRejectionComments(id) {
+      try {
+        const data = await fetchJSON(API_BASE + id + "/audit/", { method: "GET" });
+        const rejected = (data || []).find(a => a.action === "REJECTED");
+        const msg = rejected && rejected.notes ? rejected.notes : "No rejection comment found.";
+        alert(msg);
+      } catch(e) { alert("Failed to load comments: " + e.message); }
+    }
+
     document.getElementById("btnSearch").addEventListener("click", () => {
       state.search = document.getElementById("searchInput").value.trim();
       state.page = 1;
-      loadPackingLists();
+      loadInvoices();
     });
     document.getElementById("btnClear").addEventListener("click", () => {
       document.getElementById("searchInput").value = "";
       state.search = "";
       state.page = 1;
-      loadPackingLists();
+      loadInvoices();
     });
     document.getElementById("btnPrev").addEventListener("click", () => {
       if (state.previous) {
         state.page = Math.max(1, state.page - 1);
-        loadPackingLists();
+        loadInvoices();
       }
     });
     document.getElementById("btnNext").addEventListener("click", () => {
       if (state.next) {
         state.page = state.page + 1;
-        loadPackingLists();
+        loadInvoices();
       }
     });
 
-    // Bind Create navigation
-    const btnCreate = document.getElementById("btnCreate");
-    if (btnCreate) { btnCreate.addEventListener("click", () => { window.location.href = "/app/packing-list/create/"; }); }
-
     // Initial load
-    loadPackingLists();
+    loadInvoices();
   </script>
 {% endblock %}

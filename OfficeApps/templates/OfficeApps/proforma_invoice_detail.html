@@ -769,7 +769,7 @@
       </div>
 
       <div class="form-field full-width">
-        <label class="form-label">Kind of Packages</label>
+        <label class="form-label">No & Kind of Packages</label>
         <input id="kind_of_packages" type="text" class="form-input">
       </div>
     </div>
@@ -1259,7 +1259,10 @@
         try {
           const tpl = await fetchJSON("/api/master/terms-conditions/" + tplId + "/");
           nameEl.value = tpl.name || "";
-          txtEl.value = tpl.content_html || "";
+          const htmlContent = tpl.content_html || "";
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = htmlContent;
+          txtEl.value = tempDiv.textContent || tempDiv.innerText || "";
         } catch (err) {}
       });
     }
@@ -1484,9 +1487,14 @@
     function renderTerms(inv) {
       const termsView = document.getElementById("termsView");
       const editBtn = document.getElementById("btnEditTerms");
-      termsView.textContent = inv.terms_and_conditions || "No terms and conditions specified.";
+      const htmlContent = inv.terms_and_conditions || "";
+
+      termsView.innerHTML = htmlContent || "No terms and conditions specified.";
       editBtn.style.display = canEditStatus(inv.status) ? "inline-flex" : "none";
-      document.getElementById("termsTextarea").value = inv.terms_and_conditions || "";
+
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = htmlContent;
+      document.getElementById("termsTextarea").value = tempDiv.textContent || tempDiv.innerText || "";
 
       const tplSel = document.getElementById("terms_template");
       if (tplSel && inv.terms_and_conditions_template) {

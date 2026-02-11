@@ -545,13 +545,69 @@
           { name: 'contact_person', label: 'Contact Person', type: 'text' },
           { name: 'phone_no', label: 'Phone', type: 'text' },
           { name: 'email_id', label: 'Email', type: 'email' },
+          { name: 'iec_code', label: 'IEC Code', type: 'text' },
         ],
         columns: [
           { key: 'name', label: 'Name' },
+          { key: 'address', label: 'Address' },
           { key: 'country', label: 'Country', render: (v) => COUNTRY_NAME_BY_ID[v] || v },
           { key: 'contact_person', label: 'Contact' },
           { key: 'phone_no', label: 'Phone' },
           { key: 'email_id', label: 'Email' },
+          { key: 'iec_code', label: 'IEC Code' },
+          { 
+            key: 'registered_address_details', 
+            label: 'Registered Address',
+            render: (v, item, onRefresh) => {
+                const holder = document.createElement('div');
+                if (v) {
+                    holder.innerHTML = `
+                        <strong>${v.name}</strong><br>
+                        ${v.address.replace(/\n/g, '<br>')}<br>
+                        ${COUNTRY_NAME_BY_ID[v.country] || ''}
+                    `;
+                } else {
+                    holder.textContent = 'N/A';
+                }
+
+                if (CAN_EDIT) {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-secondary';
+                    btn.style.marginTop = '8px';
+                    btn.style.fontSize = '12px';
+                    btn.textContent = v ? 'Edit Address' : 'Add Address';
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openRegisteredAddressModal(item, onRefresh);
+                    });
+                    holder.appendChild(btn);
+                }
+                return holder;
+            }
+          },
+        ],
+      },
+      {
+        key: 'buyers',
+        title: 'Buyers',
+        endpoint: `${API_BASE}/buyers/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+          { name: 'address', label: 'Address', type: 'textarea' },
+          { name: 'country', label: 'Country', type: 'select', required: true, optionsSource: 'countries' },
+          { name: 'contact_person', label: 'Contact Person', type: 'text' },
+          { name: 'phone', label: 'Phone', type: 'text' },
+          { name: 'email', label: 'Email', type: 'email' },
+          { name: 'tax_number', label: 'Tax Number', type: 'text' },
+        ],
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'address', label: 'Address' },
+          { key: 'country', label: 'Country', render: (v) => COUNTRY_NAME_BY_ID[v] || v },
+          { key: 'contact_person', label: 'Contact' },
+          { key: 'phone', label: 'Phone' },
+          { key: 'email', label: 'Email' },
+          { key: 'tax_number', label: 'Tax Number' },
         ],
       },
       {
@@ -565,13 +621,16 @@
           { name: 'contact_person', label: 'Contact Person', type: 'text' },
           { name: 'phone_no', label: 'Phone', type: 'text' },
           { name: 'email_id', label: 'Email', type: 'email' },
+          { name: 'tax_number', label: 'Tax Number', type: 'text' },
         ],
         columns: [
           { key: 'name', label: 'Name' },
+          { key: 'address', label: 'Address' },
           { key: 'country', label: 'Country', render: (v) => COUNTRY_NAME_BY_ID[v] || v },
           { key: 'contact_person', label: 'Contact' },
           { key: 'phone_no', label: 'Phone' },
           { key: 'email_id', label: 'Email' },
+          { key: 'tax_number', label: 'Tax Number' },
         ],
       },
       {
@@ -682,6 +741,32 @@
         ],
         columns: [
           { key: 'name', label: 'Template Name' }
+        ],
+      },
+      {
+        key: 'registered-addresses',
+        title: 'Registered Addresses',
+        endpoint: `${API_BASE}/registered-addresses/`,
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', required: true },
+          { name: 'address', label: 'Address', type: 'textarea', required: true },
+          { name: 'country', label: 'Country', type: 'select', required: true, optionsSource: 'countries' },
+          { name: 'contact_person', label: 'Contact Person', type: 'text' },
+          { name: 'phone', label: 'Phone', type: 'text' },
+          { name: 'email', label: 'Email', type: 'email' },
+        ],
+      },
+      {
+        key: 'uom',
+        title: 'Units of Measure (UOM)',
+        endpoint: `${API_BASE}/uom/`,
+        fields: [
+          { name: 'uom', label: 'UOM', type: 'text', required: true },
+          { name: 'rate_per_uom', label: 'Rate Per UOM', type: 'text' },
+        ],
+        columns: [
+          { key: 'uom', label: 'UOM' },
+          { key: 'rate_per_uom', label: 'Rate Per UOM' },
         ],
       },
     ];
@@ -886,11 +971,17 @@
       data.forEach(item => {
         const tr = document.createElement('tr');
         resource.columns.forEach(col => {
-          const td = document.createElement('td');
-          const raw = item[col.key];
-          const text = col.render ? col.render(raw) : raw;
-          td.textContent = text != null ? text : '';
-          tr.appendChild(td);
+            const td = document.createElement('td');
+            const raw = item[col.key];
+            const content = col.render ? col.render(raw, item, onRefresh) : (raw != null ? raw : '');
+            if (typeof content === 'string') {
+                td.innerHTML = content;
+            } else if (content instanceof Node) {
+                td.appendChild(content);
+            } else {
+                td.textContent = content;
+            }
+            tr.appendChild(td);
         });
 
         if (CAN_EDIT) {
@@ -1014,6 +1105,86 @@
       document.body.appendChild(modal);
     }
 
+    function openRegisteredAddressModal(exporter, onRefresh) {
+        const resource = RESOURCES.find(r => r.key === 'registered-addresses');
+        const item = exporter.registered_address_details || {};
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        const box = document.createElement('div');
+        box.className = 'modal-box';
+        const header = document.createElement('div');
+        header.className = 'modal-header';
+        const title = document.createElement('h3');
+        title.className = 'modal-title';
+        title.textContent = `Registered Address for ${exporter.name}`;
+        header.appendChild(title);
+
+        const body = document.createElement('div');
+        body.className = 'modal-body';
+        const form = document.createElement('div');
+        form.className = 'form-grid';
+
+        const inputs = {};
+        resource.fields.forEach(f => {
+            const current = item[f.name];
+            const val = (f.type === 'select') ? current : (current || '');
+            const inputEl = buildInput(f, val);
+            const el = inputEl.querySelector('[name='+f.name+']') || inputEl.querySelector('textarea, select, input');
+            if (f.type === 'select' && current) {
+                el.value = String(current);
+            }
+            inputs[f.name] = el;
+            form.appendChild(inputEl);
+        });
+        body.appendChild(form);
+
+        const footer = document.createElement('div');
+        footer.className = 'modal-footer';
+        const btnCancel = document.createElement('button');
+        btnCancel.className = 'btn-secondary';
+        btnCancel.textContent = 'Cancel';
+        btnCancel.addEventListener('click', () => document.body.removeChild(modal));
+
+        const btnSave = document.createElement('button');
+        btnSave.className = 'btn-primary';
+        btnSave.textContent = 'Save Address';
+        btnSave.addEventListener('click', async () => {
+            const payload = { exporter: exporter.id };
+            let hasError = false;
+            resource.fields.forEach(f => {
+                const val = inputs[f.name].value;
+                if (f.required && !val) {
+                    alert(`Please fill ${f.label}`);
+                    hasError = true;
+                    return;
+                }
+                payload[f.name] = f.type === 'select' ? Number(val) : val;
+            });
+            if (hasError) return;
+
+            try {
+                const method = item.id ? 'PATCH' : 'POST';
+                const endpoint = item.id ? `${resource.endpoint}${item.id}/` : resource.endpoint;
+                await apiFetch(endpoint, { method, body: JSON.stringify(payload) });
+                document.body.removeChild(modal);
+                if (onRefresh) {
+                    await onRefresh();
+                }
+            } catch (err) {
+                alert('Save failed: ' + err.message);
+            }
+        });
+
+        footer.appendChild(btnCancel);
+        footer.appendChild(btnSave);
+        box.appendChild(header);
+        box.appendChild(body);
+        box.appendChild(footer);
+        modal.appendChild(box);
+        document.body.appendChild(modal);
+    }
+
     async function renderPanel(container, resource) {
       const tpl = document.querySelector('#panel-template');
       const panel = tpl.content.cloneNode(true);
@@ -1054,9 +1225,11 @@
         'banks',
         'exporters',
         'consignees',
+        'buyers',
         'countries',
         'payment-terms',
         'incoterms',
+        'uom',
         'ports-loading',
         'ports-discharge',
         'final-destinations',
