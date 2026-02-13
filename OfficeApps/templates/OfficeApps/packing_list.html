@@ -20,7 +20,7 @@
       <button id="btnClear" class="btn" style="background:#64748b; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">Clear</button>
     </div>
 
-    <div style="overflow:auto;">
+    <div style="overflow-x:auto; overflow-y:visible;">
       <table id="packingTable" style="width:100%; border-collapse:collapse;">
         <thead>
           <tr style="text-align:left; border-bottom:1px solid #e5e7eb;">
@@ -77,6 +77,65 @@
       previous: null,
       count: 0,
     };
+
+    let activeDropdown = null;
+    let dropdownHandlersBound = false;
+
+    function positionDropdown(dropdown, anchor) {
+      if (!dropdown || !anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      const top = rect.bottom + 4;
+      const left = rect.left;
+      const maxLeft = window.innerWidth - dropdown.offsetWidth - 8;
+      dropdown.style.left = Math.max(8, Math.min(left, maxLeft)) + "px";
+      dropdown.style.top = Math.min(top, window.innerHeight - dropdown.offsetHeight - 8) + "px";
+    }
+
+    function openDropdown(dropdown, anchor) {
+      closeDropdown();
+      dropdown._originalParent = dropdown.parentElement;
+      dropdown._originalNext = dropdown.nextSibling;
+      dropdown._anchor = anchor;
+      document.body.appendChild(dropdown);
+      dropdown.style.position = "fixed";
+      dropdown.style.display = "block";
+      dropdown.style.zIndex = "3000";
+      positionDropdown(dropdown, anchor);
+      activeDropdown = dropdown;
+    }
+
+    function closeDropdown() {
+      if (!activeDropdown) return;
+      const dropdown = activeDropdown;
+      dropdown.style.display = "none";
+      dropdown.style.position = "absolute";
+      dropdown.style.top = "";
+      dropdown.style.left = "";
+      dropdown.style.zIndex = "10";
+      if (dropdown._originalParent) {
+        dropdown._originalParent.insertBefore(dropdown, dropdown._originalNext);
+      }
+      activeDropdown = null;
+    }
+
+    function bindDropdownGlobalHandlers() {
+      if (dropdownHandlersBound) return;
+      dropdownHandlersBound = true;
+      document.addEventListener("click", (ev) => {
+        if (!activeDropdown) return;
+        const anchor = activeDropdown._anchor;
+        if (activeDropdown.contains(ev.target) || (anchor && (anchor === ev.target || anchor.contains(ev.target)))) {
+          return;
+        }
+        closeDropdown();
+      });
+      window.addEventListener("resize", () => {
+        if (activeDropdown) positionDropdown(activeDropdown, activeDropdown._anchor);
+      });
+      window.addEventListener("scroll", () => {
+        if (activeDropdown) positionDropdown(activeDropdown, activeDropdown._anchor);
+      }, true);
+    }
 
     function statusBadge(status) {
       const colors = {
@@ -155,7 +214,12 @@
       if (actionsBtn && dropdownWrap) {
         actionsBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          dropdownWrap.style.display = dropdownWrap.style.display === "none" || dropdownWrap.style.display === "" ? "block" : "none";
+          bindDropdownGlobalHandlers();
+          if (activeDropdown === dropdownWrap) {
+            closeDropdown();
+            return;
+          }
+          openDropdown(dropdownWrap, actionsBtn);
         });
         dropdownWrap.addEventListener("click", (e) => {
           e.preventDefault();
@@ -165,14 +229,8 @@
           const key = a.getAttribute("data-key");
           const actions = getAllowedActions(row);
           const found = actions.find(x => x.key === key);
-          dropdownWrap.style.display = "none";
+          closeDropdown();
           if (found) found.handler();
-        });
-        // Hide dropdown when clicking outside
-        document.addEventListener("click", (ev) => {
-          if (!dropdownWrap.contains(ev.target) && ev.target !== actionsBtn) {
-            dropdownWrap.style.display = "none";
-          }
         });
       }
     }

@@ -198,6 +198,23 @@ def _is_checker(user):
 def _is_admin(user):
     return user.is_authenticated and user.is_superuser
 
+def _sanitize_filename_component(value: str) -> str:
+    value = (value or "").strip()
+    value = re.sub(r'[\\/:*?"<>|]+', '-', value)
+    value = re.sub(r'\s+', ' ', value)
+    return value
+
+def _build_pdf_filename(doc_type: str, consignee_name: str, suffix: str = "") -> str:
+    # Date at time of download, like 23Jan2024
+    date_str = timezone.localtime(timezone.now()).strftime("%d%b%Y")
+    cons = _sanitize_filename_component(consignee_name or "")
+    parts = [date_str, doc_type]
+    if suffix:
+        parts.append(suffix)
+    if cons:
+        parts.append(cons)
+    return "_".join(parts)
+
 
 class ProformaInvoiceViewSet(BaseSoftDeleteViewSet):
     """
@@ -337,7 +354,8 @@ class ProformaInvoiceViewSet(BaseSoftDeleteViewSet):
             invoice=invoice, action=ProformaInvoiceAuditTrail.ACTION_PDF_DOWNLOADED, actor=user
         )
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = f'attachment; filename="PI_{invoice.number}.pdf"'
+        filename = _build_pdf_filename("ProformaInvoice", getattr(invoice.consignee, "name", ""))
+        response["Content-Disposition"] = f'attachment; filename="{filename}.pdf"'
         return response
 
     def _can_edit(self, user, invoice):
@@ -601,7 +619,8 @@ class CommercialInvoiceViewSet(BaseSoftDeleteViewSet):
             invoice=invoice, action=CommercialInvoiceAuditTrail.ACTION_PDF_DRAFT_DOWNLOADED, actor=user
         )
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = f'attachment; filename="CI_{invoice.number}_DRAFT.pdf"'
+        filename = _build_pdf_filename("CommercialInvoice", getattr(invoice.consignee, "name", ""), suffix="DRAFT")
+        response["Content-Disposition"] = f'attachment; filename="{filename}.pdf"'
         return response
 
     @action(detail=True, methods=["get"])
@@ -625,7 +644,8 @@ class CommercialInvoiceViewSet(BaseSoftDeleteViewSet):
             invoice=invoice, action=CommercialInvoiceAuditTrail.ACTION_PDF_DOWNLOADED, actor=user
         )
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = f'attachment; filename="CI_{invoice.number}.pdf"'
+        filename = _build_pdf_filename("CommercialInvoice", getattr(invoice.consignee, "name", ""))
+        response["Content-Disposition"] = f'attachment; filename="{filename}.pdf"'
         return response
 
     @action(detail=True, methods=["get"])
@@ -997,7 +1017,8 @@ class PackingListViewSet(BaseSoftDeleteViewSet):
         pdf_bytes = generate_packing_list_pdf_bytes(packing_list)
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = f'attachment; filename="PL_{packing_list.number}.pdf"'
+        filename = _build_pdf_filename("PackingList", getattr(packing_list.consignee, "name", ""))
+        response["Content-Disposition"] = f'attachment; filename="{filename}.pdf"'
         return response
 
     @action(detail=True, methods=["post"])

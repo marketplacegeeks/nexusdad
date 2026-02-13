@@ -20,7 +20,7 @@
       <button id="btnClear" class="btn" style="background:#64748b; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">Clear</button>
     </div>
 
-    <div style="overflow:auto;">
+    <div style="overflow-x:auto; overflow-y:visible;">
       <table id="invoiceTable" style="width:100%; border-collapse:collapse;">
         <thead>
           <tr style="text-align:left; border-bottom:1px solid #e5e7eb;">
@@ -79,6 +79,65 @@
       count: 0,
     };
 
+    let activeDropdown = null;
+    let dropdownHandlersBound = false;
+
+    function positionDropdown(dropdown, anchor) {
+      if (!dropdown || !anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      const top = rect.bottom + 4;
+      const left = rect.left;
+      const maxLeft = window.innerWidth - dropdown.offsetWidth - 8;
+      dropdown.style.left = Math.max(8, Math.min(left, maxLeft)) + "px";
+      dropdown.style.top = Math.min(top, window.innerHeight - dropdown.offsetHeight - 8) + "px";
+    }
+
+    function openDropdown(dropdown, anchor) {
+      closeDropdown();
+      dropdown._originalParent = dropdown.parentElement;
+      dropdown._originalNext = dropdown.nextSibling;
+      dropdown._anchor = anchor;
+      document.body.appendChild(dropdown);
+      dropdown.style.position = "fixed";
+      dropdown.style.display = "block";
+      dropdown.style.zIndex = "3000";
+      positionDropdown(dropdown, anchor);
+      activeDropdown = dropdown;
+    }
+
+    function closeDropdown() {
+      if (!activeDropdown) return;
+      const dropdown = activeDropdown;
+      dropdown.style.display = "none";
+      dropdown.style.position = "absolute";
+      dropdown.style.top = "";
+      dropdown.style.left = "";
+      dropdown.style.zIndex = "10";
+      if (dropdown._originalParent) {
+        dropdown._originalParent.insertBefore(dropdown, dropdown._originalNext);
+      }
+      activeDropdown = null;
+    }
+
+    function bindDropdownGlobalHandlers() {
+      if (dropdownHandlersBound) return;
+      dropdownHandlersBound = true;
+      document.addEventListener("click", (ev) => {
+        if (!activeDropdown) return;
+        const anchor = activeDropdown._anchor;
+        if (activeDropdown.contains(ev.target) || (anchor && (anchor === ev.target || anchor.contains(ev.target)))) {
+          return;
+        }
+        closeDropdown();
+      });
+      window.addEventListener("resize", () => {
+        if (activeDropdown) positionDropdown(activeDropdown, activeDropdown._anchor);
+      });
+      window.addEventListener("scroll", () => {
+        if (activeDropdown) positionDropdown(activeDropdown, activeDropdown._anchor);
+      }, true);
+    }
+
     function statusBadge(status) {
       const colors = {
         "DRAFT": "#64748b",
@@ -104,6 +163,17 @@
       } catch(e) { return v; }
     }
 
+    function formatTodayDdMonYYYY() {
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2, "0");
+      return dd + months[d.getMonth()] + d.getFullYear();
+    }
+
+    function sanitizeFilenameComponent(s) {
+      return (s || "").trim().replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim();
+    }
+
     function getAllowedActions(row) {
       const s = row.status;
       const actions = [];
@@ -111,8 +181,8 @@
       const approveAction = { key: "approve", label: "Approve", handler: () => approveInvoice(row.id) };
       const rejectAction = { key: "reject", label: "Reject (with comments)", handler: () => rejectInvoice(row.id) };
       const disableAction = { key: "disable", label: "Disable", handler: () => disableInvoice(row.id) };
-      const pdfDraftAction = { key: "pdf_draft", label: "Download Draft PDF", handler: () => pdfInvoiceDraft(row.id) };
-      const pdfAction = { key: "pdf", label: "Download Final PDF", handler: () => pdfInvoice(row.id) };
+      const pdfDraftAction = { key: "pdf_draft", label: "Download Draft PDF", handler: () => pdfInvoiceDraft(row.id, row.consignee_name) };
+      const pdfAction = { key: "pdf", label: "Download Final PDF", handler: () => pdfInvoice(row.id, row.consignee_name) };
       const viewCommentsAction = { key: "view_comments", label: "View Rejection Comments", handler: () => viewRejectionComments(row.id) };
 
       if (ROLE.admin) {
@@ -186,7 +256,12 @@
       if (actionsBtn && dropdownWrap) {
         actionsBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          dropdownWrap.style.display = dropdownWrap.style.display === "none" || dropdownWrap.style.display === "" ? "block" : "none";
+          bindDropdownGlobalHandlers();
+          if (activeDropdown === dropdownWrap) {
+            closeDropdown();
+            return;
+          }
+          openDropdown(dropdownWrap, actionsBtn);
         });
         dropdownWrap.addEventListener("click", (e) => {
           e.preventDefault();
@@ -196,13 +271,8 @@
           const key = a.getAttribute("data-key");
           const actions = getAllowedActions(row);
           const found = actions.find(x => x.key === key);
-          dropdownWrap.style.display = "none";
+          closeDropdown();
           if (found) found.handler();
-        });
-        document.addEventListener("click", (ev) => {
-          if (!dropdownWrap.contains(ev.target) && ev.target !== actionsBtn) {
-            dropdownWrap.style.display = "none";
-          }
         });
       }
     }
@@ -286,7 +356,7 @@
       } catch(e) { alert("Disable failed: " + e.message); }
     }
 
-    async function pdfInvoiceDraft(id) {
+    async function pdfInvoiceDraft(id, consigneeName) {
       try {
         const resp = await fetch(API_BASE + id + "/pdf_draft/", { method: "GET", credentials: "same-origin" });
         if (!resp.ok) {
@@ -296,10 +366,20 @@
           return;
         }
         const blob = await resp.blob();
+        const dispo = resp.headers.get("Content-Disposition") || resp.headers.get("content-disposition") || "";
+        let filename = "";
+        const m = /filename="?([^"]+)"?/i.exec(dispo);
+        if (m && m[1]) {
+          filename = m[1];
+        } else {
+          const dateStr = formatTodayDdMonYYYY();
+          const cons = sanitizeFilenameComponent(consigneeName || "");
+          filename = `${dateStr}_CommercialInvoice_${cons || id}_DRAFT.pdf`;
+        }
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "CommercialInvoice_" + id + "_DRAFT.pdf";
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -307,7 +387,7 @@
       } catch(e) { alert("Draft PDF failed: " + e.message); }
     }
 
-    async function pdfInvoice(id) {
+    async function pdfInvoice(id, consigneeName) {
       try {
         const resp = await fetch(API_BASE + id + "/pdf/", { method: "GET", credentials: "same-origin" });
         if (!resp.ok) {
@@ -317,10 +397,20 @@
           return;
         }
         const blob = await resp.blob();
+        const dispo = resp.headers.get("Content-Disposition") || resp.headers.get("content-disposition") || "";
+        let filename = "";
+        const m = /filename="?([^"]+)"?/i.exec(dispo);
+        if (m && m[1]) {
+          filename = m[1];
+        } else {
+          const dateStr = formatTodayDdMonYYYY();
+          const cons = sanitizeFilenameComponent(consigneeName || "");
+          filename = `${dateStr}_CommercialInvoice_${cons || id}.pdf`;
+        }
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "CommercialInvoice_" + id + ".pdf";
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         a.remove();

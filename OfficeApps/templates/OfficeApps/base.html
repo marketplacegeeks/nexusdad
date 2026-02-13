@@ -359,6 +359,15 @@
     ::-webkit-scrollbar-thumb:hover {
       background: rgba(255, 255, 255, 0.3);
     }
+
+    /* Global dropdown layering fix: ensure action menus appear above tables */
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 4px;
+      z-index: 1050 !important; /* override inline z-index in pages */
+    }
   </style>
 </head>
 <body>

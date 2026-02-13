@@ -1585,10 +1585,18 @@
           return;
         }
         const blob = await resp.blob();
+        const dispo = resp.headers.get("Content-Disposition") || resp.headers.get("content-disposition") || "";
+        let filename = "";
+        const m = /filename="?([^"]+)"?/i.exec(dispo);
+        if (m && m[1]) {
+          filename = m[1];
+        } else {
+          filename = "ProformaInvoice_" + id + ".pdf";
+        }
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "ProformaInvoice_" + id + ".pdf";
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         a.remove();
