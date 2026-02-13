@@ -90,11 +90,14 @@ LOGOUT_REDIRECT_URL = '/login/'
 DB_URL = os.getenv('DATABASE_URL') or None
 SSL_REQUIRE = (os.getenv('DB_SSL_REQUIRE', 'False').lower() in ('1', 'true', 't', 'yes', 'y')) and (DB_URL is not None)
 
+import dj_database_url
+import os
+
 DATABASES = {
-    'default': dj_database_url.parse(
-        DB_URL if DB_URL else f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+    'default': dj_database_url.config(
+        # This line says: "Look for DATABASE_URL in environment, otherwise use SQLite"
+        default=os.environ.get('DATABASE_URL', f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
         conn_max_age=600,
-        ssl_require=SSL_REQUIRE
     )
 }
 
