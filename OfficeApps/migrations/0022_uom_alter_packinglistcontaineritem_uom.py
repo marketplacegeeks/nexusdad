@@ -3,6 +3,11 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+# Add this function at the top level
+def clear_uom_values(apps, schema_editor):
+    PackingListContainerItem = apps.get_model('OfficeApps', 'PackingListContainerItem')
+    # This safely clears the field using Django's ORM logic
+    PackingListContainerItem.objects.all().update(uom=None)
 
 class Migration(migrations.Migration):
 
@@ -31,5 +36,6 @@ class Migration(migrations.Migration):
             name='uom',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='OfficeApps.uom'),
         ),
-        migrations.RunSQL(sql="UPDATE OfficeApps_packinglistcontaineritem SET uom_id = NULL;"),
+        # Replace migrations.RunSQL with this:
+        migrations.RunPython(clear_uom_values),
     ]
